@@ -1,0 +1,291 @@
+'use client';
+
+import { useEffect, useState, useRef } from 'react';
+import { useRouter, usePathname } from 'next/navigation';
+import Link from 'next/link';
+import { useAuth } from '@/contexts/AuthContext';
+import {
+    FileText, MessageSquare, FolderOpen, Settings, LogOut,
+    Menu, X, ChevronRight, Home, Loader2, BarChart3, Folders,
+    ChevronDown, Moon, Sun, Bell, History
+} from 'lucide-react';
+
+const navigation = [
+    { name: 'Dashboard', href: '/dashboard', icon: Home },
+    { name: 'Documents', href: '/dashboard/documents', icon: FolderOpen },
+    { name: 'Collections', href: '/dashboard/collections', icon: Folders },
+    { name: 'Ask AI', href: '/dashboard/chat', icon: MessageSquare },
+    { name: 'Chat History', href: '/dashboard/chat-history', icon: History },
+    { name: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
+    { name: 'Settings', href: '/dashboard/settings', icon: Settings },
+];
+
+export default function DashboardLayout({
+    children,
+}: {
+    children: React.ReactNode;
+}) {
+    const router = useRouter();
+    const pathname = usePathname();
+    const { user, isLoading, isAuthenticated, logout } = useAuth();
+    const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [profileOpen, setProfileOpen] = useState(false);
+    const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+    const [isDark, setIsDark] = useState(true);
+    const profileRef = useRef<HTMLDivElement>(null);
+
+    // Close profile dropdown on outside click
+    useEffect(() => {
+        const handleClickOutside = (e: MouseEvent) => {
+            if (profileRef.current && !profileRef.current.contains(e.target as Node)) {
+                setProfileOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    // Redirect if not authenticated
+    useEffect(() => {
+        if (!isLoading && !isAuthenticated) {
+            router.push('/login');
+        }
+    }, [isLoading, isAuthenticated, router]);
+
+    // Theme toggle
+    const toggleTheme = () => {
+        setIsDark(!isDark);
+        document.documentElement.classList.toggle('dark', !isDark);
+        document.documentElement.classList.toggle('light', isDark);
+    };
+
+    if (isLoading) {
+        return (
+            <div className="min-h-screen bg-dark-950 flex items-center justify-center">
+                <Loader2 className="w-8 h-8 text-primary-500 animate-spin" />
+            </div>
+        );
+    }
+
+    if (!isAuthenticated) {
+        return null;
+    }
+
+    const handleLogout = () => {
+        setShowLogoutConfirm(false);
+        logout();
+        router.push('/');
+    };
+
+    const confirmLogout = () => {
+        setShowLogoutConfirm(true);
+        setProfileOpen(false);
+    };
+
+    const userInitials = user?.full_name
+        ? user.full_name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
+        : user?.username?.slice(0, 2).toUpperCase() || 'U';
+
+    return (
+        <div className="h-screen bg-dark-950 flex overflow-hidden">
+            {/* Mobile Sidebar Backdrop */}
+            {sidebarOpen && (
+                <div
+                    className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden"
+                    onClick={() => setSidebarOpen(false)}
+                />
+            )}
+
+            {/* Sidebar */}
+            <aside className={`
+                fixed inset-y-0 left-0 z-50 w-64 bg-dark-900 border-r border-dark-800 
+                transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:h-screen
+                ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+                h-screen
+            `}>
+                <div className="flex flex-col h-full max-h-screen">
+                    {/* Logo */}
+                    <div className="flex items-center justify-between p-5 border-b border-dark-800">
+                        <Link href="/dashboard" className="flex items-center gap-2.5">
+                            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary-500 to-accent flex items-center justify-center shadow-lg shadow-primary-500/20">
+                                <FileText className="w-5 h-5 text-white" />
+                            </div>
+                            <span className="text-lg font-bold bg-gradient-to-r from-white to-primary-200 bg-clip-text text-transparent">DocQuery AI</span>
+                        </Link>
+                        <button
+                            onClick={() => setSidebarOpen(false)}
+                            className="lg:hidden text-dark-400 hover:text-white p-1"
+                        >
+                            <X className="w-5 h-5" />
+                        </button>
+                    </div>
+
+                    {/* Navigation */}
+                    <nav className="flex-1 p-3 space-y-0.5 overflow-y-auto">
+                        {navigation.map((item) => {
+                            const isActive = pathname === item.href ||
+                                (item.href !== '/dashboard' && pathname.startsWith(item.href));
+
+                            return (
+                                <Link
+                                    key={item.name}
+                                    href={item.href}
+                                    onClick={() => setSidebarOpen(false)}
+                                    className={`
+                                        flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium
+                                        transition-all duration-200 group
+                                        ${isActive
+                                            ? 'bg-primary-500/10 text-primary-400'
+                                            : 'text-dark-400 hover:text-white hover:bg-dark-800/50'}
+                                    `}
+                                >
+                                    <item.icon className={`w-[18px] h-[18px] ${isActive ? 'text-primary-400' : 'text-dark-500 group-hover:text-white'}`} />
+                                    <span className="flex-1">{item.name}</span>
+                                    {isActive && <ChevronRight className="w-4 h-4 opacity-50" />}
+                                </Link>
+                            );
+                        })}
+                    </nav>
+
+                    {/* Bottom User Section - Simplified */}
+                    <div className="p-3 border-t border-dark-800">
+                        <button
+                            onClick={confirmLogout}
+                            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium
+                                text-dark-400 hover:text-red-400 hover:bg-red-400/10 transition-all duration-200"
+                        >
+                            <LogOut className="w-[18px] h-[18px]" />
+                            Sign Out
+                        </button>
+                    </div>
+                </div>
+            </aside>
+
+            {/* Main Content */}
+            <div className="flex-1 flex flex-col h-screen min-w-0 overflow-hidden">
+                {/* Top Bar with Profile */}
+                <header className="sticky top-0 z-30 bg-dark-900/80 backdrop-blur-xl border-b border-dark-800">
+                    <div className="flex items-center justify-between px-4 lg:px-6 h-14">
+                        {/* Left: Mobile menu + Page title */}
+                        <div className="flex items-center gap-3">
+                            <button
+                                onClick={() => setSidebarOpen(true)}
+                                className="lg:hidden text-dark-400 hover:text-white p-1.5 rounded-lg hover:bg-dark-800"
+                            >
+                                <Menu className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        {/* Right: Actions + Profile */}
+                        <div className="flex items-center gap-2">
+                            {/* Notifications */}
+                            <button className="p-2 rounded-lg text-dark-400 hover:text-white hover:bg-dark-800 transition-colors relative">
+                                <Bell className="w-5 h-5" />
+                                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-primary-500 rounded-full" />
+                            </button>
+
+                            {/* Theme Toggle */}
+                            <button
+                                onClick={toggleTheme}
+                                className="p-2 rounded-lg text-dark-400 hover:text-white hover:bg-dark-800 transition-colors"
+                            >
+                                {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+                            </button>
+
+                            {/* Profile Dropdown */}
+                            <div className="relative" ref={profileRef}>
+                                <button
+                                    onClick={() => setProfileOpen(!profileOpen)}
+                                    className="flex items-center gap-2 p-1.5 pr-3 rounded-lg hover:bg-dark-800 transition-colors"
+                                >
+                                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary-500 to-accent flex items-center justify-center text-white text-sm font-semibold">
+                                        {userInitials}
+                                    </div>
+                                    <span className="hidden sm:block text-sm font-medium text-white max-w-[100px] truncate">
+                                        {user?.full_name || user?.username}
+                                    </span>
+                                    <ChevronDown className={`w-4 h-4 text-dark-400 transition-transform ${profileOpen ? 'rotate-180' : ''}`} />
+                                </button>
+
+                                {/* Dropdown Menu */}
+                                {profileOpen && (
+                                    <div className="absolute right-0 top-full mt-2 w-56 bg-dark-800 border border-dark-700 rounded-xl shadow-xl py-2 z-50">
+                                        {/* User Info */}
+                                        <div className="px-4 py-3 border-b border-dark-700">
+                                            <p className="text-sm font-medium text-white truncate">{user?.full_name || user?.username}</p>
+                                            <p className="text-xs text-dark-400 truncate">{user?.email}</p>
+                                        </div>
+
+                                        {/* Links */}
+                                        <div className="py-1">
+                                            <Link
+                                                href="/dashboard/settings"
+                                                onClick={() => setProfileOpen(false)}
+                                                className="flex items-center gap-3 px-4 py-2 text-sm text-dark-300 hover:text-white hover:bg-dark-700/50"
+                                            >
+                                                <Settings className="w-4 h-4" />
+                                                Settings
+                                            </Link>
+                                        </div>
+
+                                        {/* Logout */}
+                                        <div className="pt-1 border-t border-dark-700">
+                                            <button
+                                                onClick={confirmLogout}
+                                                className="flex items-center gap-3 w-full px-4 py-2 text-sm text-red-400 hover:bg-red-400/10"
+                                            >
+                                                <LogOut className="w-4 h-4" />
+                                                Sign Out
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </header>
+
+                {/* Page Content */}
+                <main className="flex-1 p-4 lg:p-6 overflow-y-auto relative">
+                    {children}
+                </main>
+            </div>
+            {/* Logout Confirmation Modal */}
+            {showLogoutConfirm && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center">
+                    {/* Backdrop */}
+                    <div
+                        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+                        onClick={() => setShowLogoutConfirm(false)}
+                    />
+                    {/* Modal */}
+                    <div className="relative bg-dark-800 border border-dark-700 rounded-2xl p-6 shadow-2xl w-full max-w-sm mx-4">
+                        <div className="text-center">
+                            <div className="w-14 h-14 rounded-full bg-red-500/10 flex items-center justify-center mx-auto mb-4">
+                                <LogOut className="w-7 h-7 text-red-400" />
+                            </div>
+                            <h3 className="text-lg font-semibold text-white mb-2">Sign Out?</h3>
+                            <p className="text-dark-400 text-sm mb-6">
+                                Are you sure you want to sign out of your account?
+                            </p>
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={() => setShowLogoutConfirm(false)}
+                                    className="flex-1 px-4 py-2.5 rounded-xl bg-dark-700 text-dark-300 hover:text-white hover:bg-dark-600 font-medium transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handleLogout}
+                                    className="flex-1 px-4 py-2.5 rounded-xl bg-red-500 text-white hover:bg-red-600 font-medium transition-colors"
+                                >
+                                    Sign Out
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}
