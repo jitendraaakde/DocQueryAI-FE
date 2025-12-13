@@ -60,7 +60,11 @@ export default function RegisterPage() {
         setIsLoading(true);
 
         try {
-            // Register the user (without auto-login)
+            // Check if email verification is required
+            const configResponse = await api.get<{ email_verification_required: boolean }>('/auth/config');
+            const emailVerificationRequired = configResponse.data.email_verification_required;
+
+            // Register the user
             await api.post('/auth/register', {
                 email: formData.email,
                 username: formData.username,
@@ -69,14 +73,19 @@ export default function RegisterPage() {
                 confirm_password: formData.confirm_password,
             });
 
-            // Request OTP for email verification
-            await requestOTP(formData.email, 'verification');
-
-            toast.success('Account created! Please verify your email.');
-            router.push(`/verify-otp?email=${encodeURIComponent(formData.email)}&purpose=verification`);
+            if (emailVerificationRequired) {
+                // Request OTP for email verification
+                await requestOTP(formData.email, 'verification');
+                toast.success('Account created! Please verify your email.');
+                router.push(`/verify-otp?email=${encodeURIComponent(formData.email)}&purpose=verification`);
+            } else {
+                // Skip email verification - redirect to login
+                toast.success('Account created successfully! Please log in.');
+                router.push('/login');
+            }
         } catch (error) {
             toast.error(getErrorMessage(error));
-        } finally {
+            // Only reset loading state on error
             setIsLoading(false);
         }
     };
