@@ -87,7 +87,7 @@ export function BulkUpload({
                 i === index ? { ...f, status: 'uploading', progress: 0 } : f
             ));
 
-            const response = await api.post('/documents/upload', formData, {
+            const response = await api.post('/documents', formData, {
                 headers: { 'Content-Type': 'multipart/form-data' },
                 onUploadProgress: (progressEvent) => {
                     const progress = progressEvent.total

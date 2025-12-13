@@ -77,7 +77,7 @@ export default function DocumentsPage() {
             formData.append('file', file);
 
             try {
-                const response = await api.post<Document>('/documents/', formData, {
+                const response = await api.post<Document>('/documents', formData, {
                     headers: { 'Content-Type': 'multipart/form-data' }
                 });
                 uploadedDocIds.push(response.data.id);
