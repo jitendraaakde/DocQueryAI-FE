@@ -340,8 +340,19 @@ export default function ChatPage() {
                                                 </div>
                                             ) : (
                                                 <>
-                                                    <div className="prose prose-invert prose-sm max-w-none">
-                                                        <ReactMarkdown>
+                                                    <div className="prose prose-invert prose-sm max-w-none [&>p]:mb-4 [&>p:last-child]:mb-0 [&>h1]:mt-4 [&>h1]:mb-2 [&>h2]:mt-4 [&>h2]:mb-2 [&>h3]:mt-3 [&>h3]:mb-2 [&>ul]:my-3 [&>ol]:my-3 [&>li]:mb-1">
+                                                        <ReactMarkdown
+                                                            components={{
+                                                                p: ({ children }) => <p className="mb-4 last:mb-0">{children}</p>,
+                                                                h1: ({ children }) => <h1 className="text-lg font-bold mt-4 mb-2">{children}</h1>,
+                                                                h2: ({ children }) => <h2 className="text-base font-bold mt-4 mb-2">{children}</h2>,
+                                                                h3: ({ children }) => <h3 className="text-sm font-semibold mt-3 mb-2">{children}</h3>,
+                                                                ul: ({ children }) => <ul className="list-disc list-inside my-3 space-y-1">{children}</ul>,
+                                                                ol: ({ children }) => <ol className="list-decimal list-inside my-3 space-y-1">{children}</ol>,
+                                                                li: ({ children }) => <li className="mb-1">{children}</li>,
+                                                                strong: ({ children }) => <strong className="font-bold text-white">{children}</strong>,
+                                                            }}
+                                                        >
                                                             {message.displayedContent || message.content}
                                                         </ReactMarkdown>
                                                     </div>
