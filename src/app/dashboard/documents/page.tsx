@@ -9,7 +9,7 @@ import { getCollections, updateCollectionDocuments, Collection } from '@/lib/col
 import {
     Upload, FileText, Trash2, RefreshCw, Search,
     Loader2, X, CheckCircle, AlertCircle, Clock,
-    Link as LinkIcon, ChevronDown, Folders
+    Link as LinkIcon, ChevronDown, Folders, Eye
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -32,6 +32,12 @@ export default function DocumentsPage() {
         preSelectedCollectionId ? parseInt(preSelectedCollectionId) : null
     );
     const [showCollectionDropdown, setShowCollectionDropdown] = useState(false);
+
+    // Document preview state
+    const [viewingDoc, setViewingDoc] = useState<Document | null>(null);
+    const [viewContent, setViewContent] = useState<string | null>(null);
+    const [pdfBlobUrl, setPdfBlobUrl] = useState<string | null>(null);
+    const [isLoadingView, setIsLoadingView] = useState(false);
 
     // Load collections on mount
     useEffect(() => {
@@ -150,6 +156,46 @@ export default function DocumentsPage() {
         } catch (error) {
             toast.error(getErrorMessage(error));
         }
+    };
+
+    const handleView = async (doc: Document) => {
+        setViewingDoc(doc);
+        setIsLoadingView(true);
+        setViewContent(null);
+        setPdfBlobUrl(null);
+
+        try {
+            if (doc.file_type === 'pdf') {
+                // Fetch PDF as blob with authentication
+                const response = await api.get(`/documents/${doc.id}/download`, {
+                    responseType: 'blob'
+                });
+                const blob = new Blob([response.data], { type: 'application/pdf' });
+                const url = URL.createObjectURL(blob);
+                setPdfBlobUrl(url);
+            } else {
+                // For text files, load content as text
+                const response = await api.get(`/documents/${doc.id}/download`, {
+                    responseType: 'text'
+                });
+                setViewContent(response.data);
+            }
+        } catch (error) {
+            toast.error('Failed to load document');
+            setViewingDoc(null);
+        } finally {
+            setIsLoadingView(false);
+        }
+    };
+
+    const closeViewer = () => {
+        // Revoke blob URL to free memory
+        if (pdfBlobUrl) {
+            URL.revokeObjectURL(pdfBlobUrl);
+        }
+        setViewingDoc(null);
+        setViewContent(null);
+        setPdfBlobUrl(null);
     };
 
     const filteredDocs = documents.filter(doc =>
@@ -390,6 +436,16 @@ export default function DocumentsPage() {
                             <div className="flex items-center gap-1.5">
                                 {getStatusIcon(doc.status)}
 
+                                {doc.status === 'completed' && (
+                                    <button
+                                        onClick={() => handleView(doc)}
+                                        className="p-2 text-dark-400 hover:text-primary-400 hover:bg-primary-400/10 rounded-lg transition-colors"
+                                        title="View Document"
+                                    >
+                                        <Eye className="w-4 h-4" />
+                                    </button>
+                                )}
+
                                 {doc.status === 'failed' && (
                                     <button
                                         onClick={() => handleReprocess(doc.id)}
@@ -445,6 +501,66 @@ export default function DocumentsPage() {
                     <p className="text-dark-400 text-sm">
                         {searchQuery ? 'Try a different search term' : 'Upload your first document to get started'}
                     </p>
+                </div>
+            )}
+
+            {/* Document Preview Modal */}
+            {viewingDoc && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                    <div className="bg-dark-800 border border-dark-700 rounded-2xl w-full max-w-5xl max-h-[90vh] flex flex-col shadow-2xl">
+                        {/* Modal Header */}
+                        <div className="flex items-center justify-between p-4 border-b border-dark-700">
+                            <div className="flex items-center gap-3 min-w-0">
+                                <div className="w-10 h-10 rounded-lg bg-dark-700 flex items-center justify-center flex-shrink-0">
+                                    <FileText className="w-5 h-5 text-dark-400" />
+                                </div>
+                                <div className="min-w-0">
+                                    <h3 className="text-white font-semibold truncate">{viewingDoc.original_filename}</h3>
+                                    <p className="text-xs text-dark-500">{formatFileSize(viewingDoc.file_size)} • {viewingDoc.file_type.toUpperCase()}</p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={closeViewer}
+                                className="p-2 text-dark-400 hover:text-white hover:bg-dark-700 rounded-lg transition-colors"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        {/* Modal Content */}
+                        <div className="flex-1 overflow-hidden p-4" style={{ minHeight: '500px' }}>
+                            {isLoadingView ? (
+                                <div className="flex items-center justify-center h-full">
+                                    <Loader2 className="w-8 h-8 text-primary-400 animate-spin" />
+                                </div>
+                            ) : pdfBlobUrl ? (
+                                <iframe
+                                    src={pdfBlobUrl}
+                                    className="w-full h-full rounded-lg border border-dark-700"
+                                    style={{ minHeight: '500px' }}
+                                    title={viewingDoc.original_filename}
+                                />
+                            ) : viewContent ? (
+                                <pre className="text-dark-200 text-sm whitespace-pre-wrap font-mono bg-dark-900 rounded-xl p-4 overflow-auto h-full">
+                                    {viewContent}
+                                </pre>
+                            ) : (
+                                <div className="text-center text-dark-500 py-8">
+                                    Unable to load document content
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Modal Footer */}
+                        <div className="flex items-center justify-end gap-3 p-4 border-t border-dark-700">
+                            <button
+                                onClick={closeViewer}
+                                className="px-4 py-2 text-sm bg-primary-600 hover:bg-primary-500 text-white rounded-lg transition-colors"
+                            >
+                                Close
+                            </button>
+                        </div>
+                    </div>
                 </div>
             )}
         </div>

@@ -365,15 +365,17 @@ export default function ChatPage() {
                                                         <div className="mt-3 pt-2 border-t border-dark-700/50">
                                                             <p className="text-xs font-medium text-dark-500 mb-1.5">Sources</p>
                                                             <div className="flex flex-wrap gap-1.5">
-                                                                {message.sources.map((source: { document_name: string }, i: number) => (
-                                                                    <span
-                                                                        key={i}
-                                                                        className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-dark-900/50 border border-dark-700/50 text-xs text-dark-300"
-                                                                    >
-                                                                        <FileText className="w-3 h-3" />
-                                                                        {source.document_name}
-                                                                    </span>
-                                                                ))}
+                                                                {/* Deduplicate sources by document_name */}
+                                                                {Array.from(new Set(message.sources.map((s: { document_name: string }) => s.document_name)))
+                                                                    .map((docName: string, i: number) => (
+                                                                        <span
+                                                                            key={i}
+                                                                            className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-dark-900/50 border border-dark-700/50 text-xs text-dark-300"
+                                                                        >
+                                                                            <FileText className="w-3 h-3" />
+                                                                            {docName}
+                                                                        </span>
+                                                                    ))}
                                                             </div>
                                                         </div>
                                                     )}
