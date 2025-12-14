@@ -1,6 +1,5 @@
 "use client";
-import React, { useEffect, useState, useCallback } from "react";
-import { motion } from "framer-motion";
+import React, { useEffect, useState, useCallback, useRef, memo } from "react";
 import { cn } from "@/lib/utils";
 
 interface EncryptedTextProps {
@@ -12,7 +11,7 @@ interface EncryptedTextProps {
     encryptedCharacters?: string;
 }
 
-export function EncryptedText({
+const EncryptedText = memo(function EncryptedText({
     text,
     className,
     encryptedClassName = "text-neutral-500",
@@ -22,12 +21,20 @@ export function EncryptedText({
 }: EncryptedTextProps) {
     const [displayText, setDisplayText] = useState<string[]>([]);
     const [revealedIndices, setRevealedIndices] = useState<Set<number>>(new Set());
+    const intervalsRef = useRef<NodeJS.Timeout[]>([]);
+    const timeoutsRef = useRef<NodeJS.Timeout[]>([]);
 
     const getRandomChar = useCallback(() => {
         return encryptedCharacters[Math.floor(Math.random() * encryptedCharacters.length)];
     }, [encryptedCharacters]);
 
     useEffect(() => {
+        // Clear any existing timers on effect re-run
+        intervalsRef.current.forEach(clearInterval);
+        timeoutsRef.current.forEach(clearTimeout);
+        intervalsRef.current = [];
+        timeoutsRef.current = [];
+
         // Initialize with encrypted characters
         setDisplayText(text.split("").map((char) => (char === " " ? " " : getRandomChar())));
         setRevealedIndices(new Set());
@@ -58,36 +65,42 @@ export function EncryptedText({
                     setRevealedIndices((prev) => new Set([...Array.from(prev), index]));
                 }
             }, 30);
+            intervalsRef.current.push(scrambleInterval);
         };
 
         // Start revealing with delays
         text.split("").forEach((_, index) => {
-            setTimeout(() => revealCharacter(index), index * revealDelayMs);
+            const timeout = setTimeout(() => revealCharacter(index), index * revealDelayMs);
+            timeoutsRef.current.push(timeout);
         });
 
+        // Cleanup function
         return () => {
-            // Cleanup
+            intervalsRef.current.forEach(clearInterval);
+            timeoutsRef.current.forEach(clearTimeout);
+            intervalsRef.current = [];
+            timeoutsRef.current = [];
         };
     }, [text, revealDelayMs, getRandomChar]);
 
     return (
         <span className={cn("font-mono", className)}>
             {displayText.map((char, index) => (
-                <motion.span
+                <span
                     key={index}
                     className={cn(
                         revealedIndices.has(index) ? revealedClassName : encryptedClassName,
                         "transition-colors duration-100"
                     )}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ duration: 0.1 }}
                 >
                     {char}
-                </motion.span>
+                </span>
             ))}
         </span>
     );
-}
+});
 
+EncryptedText.displayName = "EncryptedText";
+
+export { EncryptedText };
 export default EncryptedText;

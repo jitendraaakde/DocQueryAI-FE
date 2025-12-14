@@ -1,12 +1,11 @@
 'use client';
 
-import React from 'react';
-import { motion } from 'framer-motion';
+import React, { memo } from 'react';
 import { Upload, Search, MessageSquare, Zap, Shield, Clock } from 'lucide-react';
 import { BentoGrid, BentoGridItem } from '@/components/ui/bento-grid';
-import { SpotlightCard } from '@/components/ui/spotlight-card';
 import { cn } from '@/lib/utils';
 
+// Move features array outside component to prevent recreation on each render
 const features = [
     {
         title: 'Smart Document Upload',
@@ -101,7 +100,7 @@ const features = [
     },
 ];
 
-export function Features() {
+const Features = memo(function Features() {
     return (
         <section id="features" className="py-24 px-6 relative overflow-hidden">
             {/* Background gradient */}
@@ -109,14 +108,8 @@ export function Features() {
             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-primary-500/5 rounded-full blur-[120px]" />
 
             <div className="relative z-10 max-w-7xl mx-auto">
-                {/* Section Header */}
-                <motion.div
-                    className="text-center mb-16"
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.5 }}
-                >
+                {/* Section Header - using CSS animations instead of framer-motion */}
+                <div className="text-center mb-16 animate-in fade-in slide-in-from-bottom-4 duration-500">
                     <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">
                         Everything You Need to
                         <span className="block bg-gradient-to-r from-primary-400 to-accent bg-clip-text text-transparent">
@@ -126,7 +119,7 @@ export function Features() {
                     <p className="text-lg text-dark-400 max-w-2xl mx-auto">
                         Powerful features designed to transform how you interact with your knowledge base
                     </p>
-                </motion.div>
+                </div>
 
                 {/* Bento Grid */}
                 <BentoGrid className="max-w-5xl mx-auto">
@@ -144,6 +137,9 @@ export function Features() {
             </div>
         </section>
     );
-}
+});
 
+Features.displayName = "Features";
+
+export { Features };
 export default Features;

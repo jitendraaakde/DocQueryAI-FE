@@ -1,10 +1,10 @@
 'use client';
 
-import React from 'react';
+import React, { memo } from 'react';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
 import { FileText, Github, Twitter, Linkedin } from 'lucide-react';
 
+// Move data outside component to prevent recreation
 const footerLinks = {
     product: [
         { name: 'Features', href: '#features' },
@@ -23,12 +23,12 @@ const footerLinks = {
 };
 
 const socialLinks = [
-    { icon: <Twitter className="w-5 h-5" />, href: 'https://twitter.com', label: 'Twitter' },
-    { icon: <Github className="w-5 h-5" />, href: 'https://github.com', label: 'GitHub' },
-    { icon: <Linkedin className="w-5 h-5" />, href: 'https://linkedin.com', label: 'LinkedIn' },
+    { Icon: Twitter, href: 'https://twitter.com', label: 'Twitter' },
+    { Icon: Github, href: 'https://github.com', label: 'GitHub' },
+    { Icon: Linkedin, href: 'https://linkedin.com', label: 'LinkedIn' },
 ];
 
-export function Footer() {
+const Footer = memo(function Footer() {
     return (
         <footer className="relative py-16 px-6 border-t border-dark-800/50">
             <div className="absolute inset-0 bg-dark-950" />
@@ -46,21 +46,19 @@ export function Footer() {
                         <p className="text-dark-400 text-sm max-w-xs mb-6">
                             Transform your documents into an intelligent knowledge base. Upload, search, and get AI-powered answers.
                         </p>
-                        {/* Social Links */}
+                        {/* Social Links - using CSS instead of framer-motion */}
                         <div className="flex gap-4">
                             {socialLinks.map((social) => (
-                                <motion.a
+                                <a
                                     key={social.label}
                                     href={social.href}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="w-10 h-10 rounded-xl bg-dark-800 hover:bg-dark-700 flex items-center justify-center text-dark-400 hover:text-white transition-colors"
-                                    whileHover={{ scale: 1.05 }}
-                                    whileTap={{ scale: 0.95 }}
+                                    className="w-10 h-10 rounded-xl bg-dark-800 hover:bg-dark-700 flex items-center justify-center text-dark-400 hover:text-white transition-all hover:scale-105 active:scale-95"
                                     aria-label={social.label}
                                 >
-                                    {social.icon}
-                                </motion.a>
+                                    <social.Icon className="w-5 h-5" />
+                                </a>
                             ))}
                         </div>
                     </div>
@@ -129,6 +127,9 @@ export function Footer() {
             </div>
         </footer>
     );
-}
+});
 
+Footer.displayName = "Footer";
+
+export { Footer };
 export default Footer;

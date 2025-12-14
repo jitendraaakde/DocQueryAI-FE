@@ -1,13 +1,13 @@
 'use client';
 
-import React from 'react';
+import React, { memo } from 'react';
 import { cn } from '@/lib/utils';
 
 interface BackgroundBeamsProps {
     className?: string;
 }
 
-export function BackgroundBeams({ className }: BackgroundBeamsProps) {
+const BackgroundBeams = memo(function BackgroundBeams({ className }: BackgroundBeamsProps) {
     return (
         <div className={cn('absolute inset-0 overflow-hidden pointer-events-none', className)}>
             {/* Gradient orbs */}
@@ -61,6 +61,9 @@ export function BackgroundBeams({ className }: BackgroundBeamsProps) {
             </svg>
         </div>
     );
-}
+});
 
+BackgroundBeams.displayName = "BackgroundBeams";
+
+export { BackgroundBeams };
 export default BackgroundBeams;

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, ReactNode } from 'react';
 import { User, Token, UserLogin, UserCreate } from '@/types';
 import api, { tokenManager, getErrorMessage } from '@/lib/api';
 
@@ -43,36 +43,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         refreshUser();
     }, [refreshUser]);
 
-    const login = async (credentials: UserLogin) => {
+    const login = useCallback(async (credentials: UserLogin) => {
         const response = await api.post<Token>('/auth/login', credentials);
         tokenManager.setTokens(response.data);
         await refreshUser();
-    };
+    }, [refreshUser]);
 
-    const register = async (data: UserCreate) => {
+    const register = useCallback(async (data: UserCreate) => {
         await api.post('/auth/register', data);
         // Auto-login after registration
         await login({ email: data.email, password: data.password });
-    };
+    }, [login]);
 
-    const logout = () => {
+    const logout = useCallback(() => {
         tokenManager.clearTokens();
         setUser(null);
         // Redirect handled by component
-    };
+    }, []);
+
+    // Memoize the context value to prevent unnecessary re-renders of consumers
+    const contextValue = useMemo(() => ({
+        user,
+        isLoading,
+        isAuthenticated: !!user,
+        login,
+        register,
+        logout,
+        refreshUser,
+    }), [user, isLoading, login, register, logout, refreshUser]);
 
     return (
-        <AuthContext.Provider
-            value={{
-                user,
-                isLoading,
-                isAuthenticated: !!user,
-                login,
-                register,
-                logout,
-                refreshUser,
-            }}
-        >
+        <AuthContext.Provider value={contextValue}>
             {children}
         </AuthContext.Provider>
     );

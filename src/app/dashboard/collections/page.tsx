@@ -1,8 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, memo } from 'react';
 import { useRouter } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
 import {
     Folders, Plus, Trash2, Edit3, Share2, FileText,
     Loader2, Search, MoreHorizontal, X, Check,
@@ -39,7 +38,7 @@ export default function CollectionsPage() {
         loadCollections();
     }, []);
 
-    const loadCollections = async () => {
+    const loadCollections = useCallback(async () => {
         try {
             setIsLoading(true);
             const data = await getCollections();
@@ -50,9 +49,9 @@ export default function CollectionsPage() {
         } finally {
             setIsLoading(false);
         }
-    };
+    }, []);
 
-    const handleCreate = async (name: string, description: string, color: string) => {
+    const handleCreate = useCallback(async (name: string, description: string, color: string) => {
         try {
             const collection = await createCollection({ name, description, color });
             setCollections(prev => [collection, ...prev]);
@@ -62,9 +61,9 @@ export default function CollectionsPage() {
             console.error('Failed to create collection:', error);
             toast.error('Failed to create collection');
         }
-    };
+    }, []);
 
-    const handleDelete = async (id: number) => {
+    const handleDelete = useCallback(async (id: number) => {
         if (!confirm('Are you sure you want to delete this collection?')) return;
 
         try {
@@ -75,11 +74,14 @@ export default function CollectionsPage() {
             console.error('Failed to delete collection:', error);
             toast.error('Failed to delete collection');
         }
-    };
+    }, []);
 
     const filteredCollections = collections.filter(c =>
         c.name.toLowerCase().includes(searchQuery.toLowerCase())
     );
+
+    const closeModal = useCallback(() => setShowCreateModal(false), []);
+    const openModal = useCallback(() => setShowCreateModal(true), []);
 
     return (
         <div className="max-w-6xl mx-auto">
@@ -95,7 +97,7 @@ export default function CollectionsPage() {
                     </p>
                 </div>
                 <button
-                    onClick={() => setShowCreateModal(true)}
+                    onClick={openModal}
                     className="btn-primary flex items-center gap-2 whitespace-nowrap"
                 >
                     <Plus className="w-4 h-4" />
@@ -180,7 +182,7 @@ export default function CollectionsPage() {
                     </p>
                     {!searchQuery && (
                         <button
-                            onClick={() => setShowCreateModal(true)}
+                            onClick={openModal}
                             className="btn-primary"
                         >
                             Create Collection
@@ -203,14 +205,14 @@ export default function CollectionsPage() {
             {/* Create Modal */}
             <CreateCollectionModal
                 isOpen={showCreateModal}
-                onClose={() => setShowCreateModal(false)}
+                onClose={closeModal}
                 onCreate={handleCreate}
             />
         </div>
     );
 }
 
-function CollectionCard({ collection, onDelete, onEdit }: {
+const CollectionCard = memo(function CollectionCard({ collection, onDelete, onEdit }: {
     collection: Collection;
     onDelete: () => void;
     onEdit: () => void;
@@ -221,7 +223,7 @@ function CollectionCard({ collection, onDelete, onEdit }: {
     const [documents, setDocuments] = useState<Document[]>([]);
     const [loadingDocs, setLoadingDocs] = useState(false);
 
-    const loadDocuments = async () => {
+    const loadDocuments = useCallback(async () => {
         if (documents.length > 0 || loadingDocs) return;
 
         setLoadingDocs(true);
@@ -241,17 +243,17 @@ function CollectionCard({ collection, onDelete, onEdit }: {
         } finally {
             setLoadingDocs(false);
         }
-    };
+    }, [collection.id, documents.length, loadingDocs]);
 
-    const handleExpand = () => {
+    const handleExpand = useCallback(() => {
         const newExpanded = !isExpanded;
         setIsExpanded(newExpanded);
         if (newExpanded) loadDocuments();
-    };
+    }, [isExpanded, loadDocuments]);
 
-    const handleUploadDocuments = () => {
+    const handleUploadDocuments = useCallback(() => {
         router.push(`/dashboard/documents?collection=${collection.id}`);
-    };
+    }, [router, collection.id]);
 
     const formatFileSize = (bytes: number) => {
         if (bytes < 1024) return `${bytes} B`;
@@ -259,11 +261,12 @@ function CollectionCard({ collection, onDelete, onEdit }: {
         return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
     };
 
+    const toggleMenu = useCallback(() => setShowMenu(prev => !prev), []);
+    const closeMenu = useCallback(() => setShowMenu(false), []);
+
     return (
-        <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className={`group relative rounded-2xl bg-dark-800/50 border border-dark-700/50 hover:border-dark-600 transition-all ${isExpanded ? 'col-span-full' : ''}`}
+        <div
+            className={`group relative rounded-2xl bg-dark-800/50 border border-dark-700/50 hover:border-dark-600 transition-all duration-200 ${isExpanded ? 'col-span-full' : ''}`}
         >
             {/* Main Card Content */}
             <div className="p-5">
@@ -301,10 +304,10 @@ function CollectionCard({ collection, onDelete, onEdit }: {
                             className={`p-2 rounded-lg transition-all ${isExpanded ? 'bg-primary-500/20 text-primary-400' : 'text-dark-500 hover:text-white hover:bg-dark-700'}`}
                             title={isExpanded ? 'Collapse' : 'View Documents'}
                         >
-                            <ChevronDown className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                            <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
                         </button>
                         <button
-                            onClick={() => setShowMenu(!showMenu)}
+                            onClick={toggleMenu}
                             className="p-2 rounded-lg text-dark-500 hover:text-white hover:bg-dark-700 transition-all"
                         >
                             <MoreHorizontal className="w-4 h-4" />
@@ -313,109 +316,98 @@ function CollectionCard({ collection, onDelete, onEdit }: {
                 </div>
             </div>
 
-            {/* Expanded Documents Section */}
-            <AnimatePresence>
-                {isExpanded && (
-                    <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: 'auto', opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        className="border-t border-dark-700 overflow-hidden"
-                    >
-                        <div className="p-5">
-                            {/* Header with Upload button */}
-                            <div className="flex items-center justify-between mb-4">
-                                <h4 className="text-sm font-medium text-dark-300">Documents in Collection</h4>
-                                <button
-                                    onClick={handleUploadDocuments}
-                                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-primary-600 hover:bg-primary-500 text-white text-sm transition-colors"
-                                >
-                                    <Upload className="w-4 h-4" />
-                                    Upload Documents
-                                </button>
-                            </div>
-
-                            {/* Documents List */}
-                            {loadingDocs ? (
-                                <div className="flex items-center justify-center py-8">
-                                    <Loader2 className="w-6 h-6 text-primary-400 animate-spin" />
-                                </div>
-                            ) : documents.length === 0 ? (
-                                <div className="text-center py-8 text-dark-500">
-                                    <FileText className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                                    <p className="text-sm">No documents in this collection yet</p>
-                                    <button
-                                        onClick={handleUploadDocuments}
-                                        className="mt-3 text-primary-400 hover:text-primary-300 text-sm"
-                                    >
-                                        Upload your first document
-                                    </button>
-                                </div>
-                            ) : (
-                                <div className="space-y-2 max-h-64 overflow-y-auto">
-                                    {documents.map(doc => (
-                                        <div
-                                            key={doc.id}
-                                            className="flex items-center gap-3 p-3 rounded-lg bg-dark-900/50 border border-dark-700/50"
-                                        >
-                                            <div className="w-9 h-9 rounded-lg bg-dark-700 flex items-center justify-center flex-shrink-0">
-                                                <FileText className="w-4 h-4 text-dark-400" />
-                                            </div>
-                                            <div className="flex-1 min-w-0">
-                                                <p className="text-sm text-white truncate">{doc.original_filename}</p>
-                                                <p className="text-xs text-dark-500">{formatFileSize(doc.file_size)}</p>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
-
-            {/* Dropdown menu */}
-            <AnimatePresence>
-                {showMenu && (
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.95 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.95 }}
-                        className="absolute top-12 right-4 w-40 py-1 rounded-lg bg-dark-700 border border-dark-600 shadow-xl z-10"
-                    >
+            {/* Expanded Documents Section - CSS transition instead of framer-motion */}
+            <div className={`border-t border-dark-700 overflow-hidden transition-all duration-300 ease-in-out ${isExpanded ? 'max-h-[400px] opacity-100' : 'max-h-0 opacity-0'}`}>
+                <div className="p-5">
+                    {/* Header with Upload button */}
+                    <div className="flex items-center justify-between mb-4">
+                        <h4 className="text-sm font-medium text-dark-300">Documents in Collection</h4>
                         <button
-                            onClick={() => { handleExpand(); setShowMenu(false); }}
+                            onClick={handleUploadDocuments}
+                            className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-primary-600 hover:bg-primary-500 text-white text-sm transition-colors"
+                        >
+                            <Upload className="w-4 h-4" />
+                            Upload Documents
+                        </button>
+                    </div>
+
+                    {/* Documents List */}
+                    {loadingDocs ? (
+                        <div className="flex items-center justify-center py-8">
+                            <Loader2 className="w-6 h-6 text-primary-400 animate-spin" />
+                        </div>
+                    ) : documents.length === 0 ? (
+                        <div className="text-center py-8 text-dark-500">
+                            <FileText className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                            <p className="text-sm">No documents in this collection yet</p>
+                            <button
+                                onClick={handleUploadDocuments}
+                                className="mt-3 text-primary-400 hover:text-primary-300 text-sm"
+                            >
+                                Upload your first document
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="space-y-2 max-h-64 overflow-y-auto">
+                            {documents.map(doc => (
+                                <div
+                                    key={doc.id}
+                                    className="flex items-center gap-3 p-3 rounded-lg bg-dark-900/50 border border-dark-700/50"
+                                >
+                                    <div className="w-9 h-9 rounded-lg bg-dark-700 flex items-center justify-center flex-shrink-0">
+                                        <FileText className="w-4 h-4 text-dark-400" />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-sm text-white truncate">{doc.original_filename}</p>
+                                        <p className="text-xs text-dark-500">{formatFileSize(doc.file_size)}</p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            {/* Dropdown menu - CSS transition instead of framer-motion */}
+            {showMenu && (
+                <>
+                    <div className="fixed inset-0 z-10" onClick={closeMenu} />
+                    <div className="absolute top-12 right-4 w-40 py-1 rounded-lg bg-dark-700 border border-dark-600 shadow-xl z-20">
+                        <button
+                            onClick={() => { handleExpand(); closeMenu(); }}
                             className="w-full px-3 py-2 text-left text-sm text-dark-200 hover:bg-dark-600 flex items-center gap-2"
                         >
                             <Eye className="w-4 h-4" /> View Documents
                         </button>
                         <button
-                            onClick={() => { handleUploadDocuments(); setShowMenu(false); }}
+                            onClick={() => { handleUploadDocuments(); closeMenu(); }}
                             className="w-full px-3 py-2 text-left text-sm text-dark-200 hover:bg-dark-600 flex items-center gap-2"
                         >
                             <Upload className="w-4 h-4" /> Upload Docs
                         </button>
                         <div className="border-t border-dark-600 my-1" />
                         <button
-                            onClick={() => { onEdit(); setShowMenu(false); }}
+                            onClick={() => { onEdit(); closeMenu(); }}
                             className="w-full px-3 py-2 text-left text-sm text-dark-200 hover:bg-dark-600 flex items-center gap-2"
                         >
                             <Edit3 className="w-4 h-4" /> Edit
                         </button>
                         <button
-                            onClick={() => { onDelete(); setShowMenu(false); }}
+                            onClick={() => { onDelete(); closeMenu(); }}
                             className="w-full px-3 py-2 text-left text-sm text-red-400 hover:bg-dark-600 flex items-center gap-2"
                         >
                             <Trash2 className="w-4 h-4" /> Delete
                         </button>
-                    </motion.div>
-                )}
-            </AnimatePresence>
-        </motion.div>
+                    </div>
+                </>
+            )}
+        </div>
     );
-}
+});
 
-function CreateCollectionModal({ isOpen, onClose, onCreate }: {
+CollectionCard.displayName = "CollectionCard";
+
+const CreateCollectionModal = memo(function CreateCollectionModal({ isOpen, onClose, onCreate }: {
     isOpen: boolean;
     onClose: () => void;
     onCreate: (name: string, description: string, color: string) => void;
@@ -441,11 +433,7 @@ function CreateCollectionModal({ isOpen, onClose, onCreate }: {
 
     return (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <motion.div
-                initial={{ scale: 0.95, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                className="bg-dark-800 border border-dark-700 rounded-2xl p-6 max-w-md w-full shadow-2xl"
-            >
+            <div className="bg-dark-800 border border-dark-700 rounded-2xl p-6 max-w-md w-full shadow-2xl animate-in fade-in zoom-in-95 duration-200">
                 <div className="flex items-center justify-between mb-4">
                     <h2 className="text-xl font-semibold text-white">Create Collection</h2>
                     <button onClick={onClose} className="text-dark-400 hover:text-white p-1">
@@ -511,7 +499,9 @@ function CreateCollectionModal({ isOpen, onClose, onCreate }: {
                         </button>
                     </div>
                 </form>
-            </motion.div>
+            </div>
         </div>
     );
-}
+});
+
+CreateCollectionModal.displayName = "CreateCollectionModal";

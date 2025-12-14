@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import api, { getErrorMessage } from '@/lib/api';
 import { QueryResponse, Document } from '@/types';
@@ -32,7 +32,20 @@ interface ChatMessage {
     feedback?: 'thumbs_up' | 'thumbs_down' | null;
 }
 
+// Wrap with Suspense because useSearchParams needs it in Next.js App Router
 export default function ChatPage() {
+    return (
+        <Suspense fallback={
+            <div className="flex items-center justify-center h-full">
+                <Loader2 className="w-8 h-8 text-primary-500 animate-spin" />
+            </div>
+        }>
+            <ChatContent />
+        </Suspense>
+    );
+}
+
+function ChatContent() {
     const searchParams = useSearchParams();
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [input, setInput] = useState('');
@@ -250,14 +263,6 @@ export default function ChatPage() {
                     <div className={`max-w-3xl mx-auto p-4 w-full ${messages.length === 0 ? 'flex-1 flex flex-col justify-center' : 'space-y-6'}`}>
                         {messages.length === 0 ? (
                             <div className="flex flex-col items-center justify-center text-center px-4 relative py-8">
-                                {/* Floating Particles */}
-                                <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                                    <div className="chat-floating-particle absolute top-1/4 left-1/4 w-2 h-2 rounded-full bg-primary-400/30" style={{ animationDelay: '0s' }} />
-                                    <div className="chat-floating-particle absolute top-1/3 right-1/4 w-1.5 h-1.5 rounded-full bg-accent/40" style={{ animationDelay: '1s' }} />
-                                    <div className="chat-floating-particle absolute bottom-1/3 left-1/3 w-1 h-1 rounded-full bg-primary-300/50" style={{ animationDelay: '2s' }} />
-                                    <div className="chat-floating-particle absolute top-1/2 right-1/3 w-2.5 h-2.5 rounded-full bg-primary-500/20" style={{ animationDelay: '3s' }} />
-                                    <div className="chat-floating-particle absolute bottom-1/4 right-1/4 w-1.5 h-1.5 rounded-full bg-accent/30" style={{ animationDelay: '4s' }} />
-                                </div>
 
                                 {/* Animated Gradient Orb */}
                                 <div className="relative mb-6">

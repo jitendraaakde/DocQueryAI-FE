@@ -1,15 +1,14 @@
 'use client';
 
-import React from 'react';
+import React, { memo } from 'react';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
 import { ArrowRight, Sparkles } from 'lucide-react';
 import { BackgroundBeams } from '@/components/ui/background-beams';
 import { Meteors } from '@/components/ui/meteors';
 import { SparklesCore } from '@/components/ui/sparkles-core';
 import { EncryptedText } from '@/components/ui/encrypted-text';
 
-export function Hero() {
+const Hero = memo(function Hero() {
     return (
         <section className="relative min-h-screen flex items-center justify-center overflow-hidden pt-20">
             {/* Background */}
@@ -19,33 +18,27 @@ export function Hero() {
             <div className="relative z-10 max-w-7xl mx-auto px-6 pt-16 pb-24">
                 <div className="text-center">
                     {/* Badge */}
-                    <motion.div
-                        className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-primary-500/10 to-accent/10 border border-primary-500/20 mb-8"
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.5 }}
+                    <div
+                        className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-primary-500/10 to-accent/10 border border-primary-500/20 mb-8 animate-in fade-in slide-in-from-bottom-4 duration-500"
                     >
                         <Sparkles className="w-4 h-4 text-primary-400" />
                         <span className="text-sm text-primary-300 font-medium">
                             AI-Powered Document Intelligence
                         </span>
-                    </motion.div>
+                    </div>
 
                     {/* Headline with Sparkles */}
                     <div className="relative">
-                        <motion.h1
-                            className="text-5xl md:text-7xl lg:text-8xl font-bold mb-6 leading-tight"
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.5, delay: 0.1 }}
+                        <h1
+                            className="text-5xl md:text-7xl lg:text-8xl font-bold mb-6 leading-tight animate-in fade-in slide-in-from-bottom-4 duration-500 delay-100"
                         >
                             <span className="text-white">Query Documents with </span>
                             <span className="bg-gradient-to-r from-primary-400 via-accent to-primary-300 bg-clip-text text-transparent relative">
                                 AI
                             </span>
-                        </motion.h1>
+                        </h1>
 
-                        {/* Sparkles under headline */}
+                        {/* Sparkles under headline - reduced particle density */}
                         <div className="w-full md:w-[40rem] h-20 mx-auto relative">
                             {/* Gradient lines */}
                             <div className="absolute inset-x-10 md:inset-x-20 top-0 bg-gradient-to-r from-transparent via-indigo-500 to-transparent h-[2px] w-3/4 blur-sm" />
@@ -53,12 +46,12 @@ export function Hero() {
                             <div className="absolute inset-x-40 md:inset-x-60 top-0 bg-gradient-to-r from-transparent via-sky-500 to-transparent h-[5px] w-1/4 blur-sm" />
                             <div className="absolute inset-x-40 md:inset-x-60 top-0 bg-gradient-to-r from-transparent via-sky-500 to-transparent h-px w-1/4" />
 
-                            {/* Sparkles particles */}
+                            {/* Sparkles particles - now uses 50 instead of 800 */}
                             <SparklesCore
                                 background="transparent"
                                 minSize={0.4}
                                 maxSize={1}
-                                particleDensity={800}
+                                particleDensity={50}
                                 className="w-full h-full"
                                 particleColor="#FFFFFF"
                             />
@@ -69,11 +62,8 @@ export function Hero() {
                     </div>
 
                     {/* Subheadline with Encrypted Text */}
-                    <motion.div
-                        className="text-lg md:text-xl text-dark-400 max-w-2xl mx-auto mb-12"
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.5, delay: 0.2 }}
+                    <div
+                        className="text-lg md:text-xl text-dark-400 max-w-2xl mx-auto mb-12 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-200"
                     >
                         <EncryptedText
                             text="Upload documents, ask questions, get AI-powered answers with citations."
@@ -81,72 +71,52 @@ export function Hero() {
                             revealedClassName="text-dark-300"
                             revealDelayMs={30}
                         />
-                    </motion.div>
+                    </div>
 
                     {/* CTA Buttons */}
-                    <motion.div
-                        className="flex flex-col sm:flex-row gap-4 justify-center mb-20"
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.5, delay: 0.3 }}
+                    <div
+                        className="flex flex-col sm:flex-row gap-4 justify-center mb-20 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-300"
                     >
                         <Link href="/register">
-                            <motion.button
-                                className="group relative inline-flex items-center justify-center gap-2 px-8 py-4 text-lg font-semibold text-white rounded-2xl bg-gradient-to-r from-primary-600 to-primary-500 overflow-hidden"
-                                whileHover={{ scale: 1.02 }}
-                                whileTap={{ scale: 0.98 }}
-                            >
+                            <button className="group relative inline-flex items-center justify-center gap-2 px-8 py-4 text-lg font-semibold text-white rounded-2xl bg-gradient-to-r from-primary-600 to-primary-500 overflow-hidden transition-transform hover:scale-[1.02] active:scale-[0.98]">
                                 <span className="relative z-10">Start for Free</span>
                                 <ArrowRight className="w-5 h-5 relative z-10 group-hover:translate-x-1 transition-transform" />
                                 <div className="absolute inset-0 bg-gradient-to-r from-primary-400 to-accent opacity-0 group-hover:opacity-100 transition-opacity" />
-                            </motion.button>
+                            </button>
                         </Link>
                         <Link href="#features">
-                            <motion.button
-                                className="px-8 py-4 text-lg font-semibold text-dark-200 rounded-2xl border border-dark-700 hover:border-dark-500 hover:text-white transition-colors"
-                                whileHover={{ scale: 1.02 }}
-                                whileTap={{ scale: 0.98 }}
-                            >
+                            <button className="px-8 py-4 text-lg font-semibold text-dark-200 rounded-2xl border border-dark-700 hover:border-dark-500 hover:text-white transition-all hover:scale-[1.02] active:scale-[0.98]">
                                 See How It Works
-                            </motion.button>
+                            </button>
                         </Link>
-                    </motion.div>
+                    </div>
 
                     {/* Demo Card */}
-                    <motion.div
-                        className="relative max-w-4xl mx-auto"
-                        initial={{ opacity: 0, y: 40 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.6, delay: 0.4 }}
+                    <div
+                        className="relative max-w-4xl mx-auto animate-in fade-in slide-in-from-bottom-6 duration-600 delay-400"
                     >
                         {/* Glow effect */}
                         <div className="absolute -inset-4 bg-gradient-to-r from-primary-500/20 via-accent/20 to-primary-500/20 rounded-3xl blur-2xl" />
 
                         {/* Card */}
                         <div className="relative bg-dark-900/80 backdrop-blur-xl rounded-2xl border border-dark-700/50 p-6 md:p-8 overflow-hidden">
-                            <Meteors number={15} />
+                            <Meteors number={5} />
 
                             {/* Mock Chat Interface */}
                             <div className="space-y-4">
                                 {/* User message */}
                                 <div className="flex justify-end">
-                                    <motion.div
-                                        className="bg-gradient-to-r from-primary-600 to-primary-500 text-white px-5 py-3 rounded-2xl rounded-br-md max-w-md text-left shadow-lg shadow-primary-500/20"
-                                        initial={{ opacity: 0, x: 20 }}
-                                        animate={{ opacity: 1, x: 0 }}
-                                        transition={{ duration: 0.4, delay: 0.6 }}
+                                    <div
+                                        className="bg-gradient-to-r from-primary-600 to-primary-500 text-white px-5 py-3 rounded-2xl rounded-br-md max-w-md text-left shadow-lg shadow-primary-500/20 animate-in fade-in slide-in-from-right-4 duration-400 delay-500"
                                     >
                                         What are the key findings from the Q4 financial report?
-                                    </motion.div>
+                                    </div>
                                 </div>
 
                                 {/* AI response */}
                                 <div className="flex justify-start">
-                                    <motion.div
-                                        className="bg-dark-800/90 border border-dark-700/50 text-dark-100 px-5 py-4 rounded-2xl rounded-bl-md max-w-lg text-left"
-                                        initial={{ opacity: 0, x: -20 }}
-                                        animate={{ opacity: 1, x: 0 }}
-                                        transition={{ duration: 0.4, delay: 0.8 }}
+                                    <div
+                                        className="bg-dark-800/90 border border-dark-700/50 text-dark-100 px-5 py-4 rounded-2xl rounded-bl-md max-w-lg text-left animate-in fade-in slide-in-from-left-4 duration-400 delay-700"
                                     >
                                         <p className="mb-3 text-dark-100">Based on your Q4 Financial Report, here are the key findings:</p>
                                         <ul className="space-y-2 text-sm text-dark-300">
@@ -166,15 +136,18 @@ export function Hero() {
                                         <p className="text-xs text-dark-500 mt-3 pt-3 border-t border-dark-700">
                                             📄 Sources: Q4_Report.pdf (Pages 4, 12, 15)
                                         </p>
-                                    </motion.div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </motion.div>
+                    </div>
                 </div>
             </div>
         </section>
     );
-}
+});
 
+Hero.displayName = "Hero";
+
+export { Hero };
 export default Hero;

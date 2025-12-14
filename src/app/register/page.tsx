@@ -1,11 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { Navbar } from '@/components/landing/navbar';
-import { Footer } from '@/components/landing/footer';
+import { AuthHeader } from '@/components/landing/auth-header';
 import { FileText, Mail, Lock, User, Loader2, Eye, EyeOff, CheckCircle, ArrowRight, Sparkles, Shield, Zap } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api, { getErrorMessage } from '@/lib/api';
@@ -26,10 +25,11 @@ export default function RegisterPage() {
     const [isLoading, setIsLoading] = useState(false);
 
     // Redirect if already authenticated
-    if (!authLoading && isAuthenticated) {
-        router.push('/dashboard');
-        return null;
-    }
+    useEffect(() => {
+        if (!authLoading && isAuthenticated) {
+            router.push('/dashboard');
+        }
+    }, [authLoading, isAuthenticated, router]);
 
     // Password strength checks
     const passwordChecks = {
@@ -90,9 +90,21 @@ export default function RegisterPage() {
         }
     };
 
+    if (authLoading) {
+        return (
+            <div className="min-h-screen bg-dark-950 flex items-center justify-center">
+                <Loader2 className="w-8 h-8 text-primary-500 animate-spin" />
+            </div>
+        );
+    }
+
+    if (isAuthenticated) {
+        return null;
+    }
+
     return (
         <>
-            <Navbar />
+            <AuthHeader />
             <main className="min-h-screen bg-dark-950 flex relative overflow-hidden pt-16">
                 {/* Background decorations - all with pointer-events-none */}
                 <div className="absolute inset-0 pointer-events-none">
@@ -335,18 +347,9 @@ export default function RegisterPage() {
                                 </p>
                             </div>
                         </div>
-
-                        {/* Back to Home */}
-                        <p className="text-center text-dark-500 mt-6">
-                            <Link href="/" className="hover:text-dark-300 flex items-center justify-center gap-2 transition-colors">
-                                <ArrowRight className="w-4 h-4 rotate-180" />
-                                Back to Home
-                            </Link>
-                        </p>
                     </div>
                 </div>
             </main>
-            <Footer />
         </>
     );
 }

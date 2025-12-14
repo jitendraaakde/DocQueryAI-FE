@@ -1,19 +1,18 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { Navbar } from '@/components/landing/navbar';
-import { Footer } from '@/components/landing/footer';
-import { FileText, Mail, Lock, Loader2, Eye, EyeOff, ArrowRight, Sparkles, Shield, Zap, CheckCircle } from 'lucide-react';
+import { AuthHeader } from '@/components/landing/auth-header';
+import { FileText, Mail, Lock, Loader2, Eye, EyeOff, ArrowRight, Sparkles, Shield, Zap } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { getErrorMessage } from '@/lib/api';
 
-export default function LoginPage() {
+// Separate component to handle search params (needs Suspense boundary)
+function LoginForm() {
     const router = useRouter();
     const searchParams = useSearchParams();
-    const verified = searchParams.get('verified');
     const { login, isAuthenticated, isLoading: authLoading } = useAuth();
 
     const [formData, setFormData] = useState({
@@ -23,16 +22,20 @@ export default function LoginPage() {
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
 
-    // Show success message if just verified
-    if (verified === 'true') {
-        toast.success('Email verified! You can now log in.', { id: 'verified' });
-    }
+    // Show success message if just verified - only once on mount
+    useEffect(() => {
+        const verified = searchParams.get('verified');
+        if (verified === 'true') {
+            toast.success('Email verified! You can now log in.', { id: 'verified' });
+        }
+    }, [searchParams]);
 
     // Redirect if already authenticated
-    if (!authLoading && isAuthenticated) {
-        router.push('/dashboard');
-        return null;
-    }
+    useEffect(() => {
+        if (!authLoading && isAuthenticated) {
+            router.push('/dashboard');
+        }
+    }, [authLoading, isAuthenticated, router]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -59,9 +62,21 @@ export default function LoginPage() {
         }
     };
 
+    if (authLoading) {
+        return (
+            <div className="min-h-screen bg-dark-950 flex items-center justify-center">
+                <Loader2 className="w-8 h-8 text-primary-500 animate-spin" />
+            </div>
+        );
+    }
+
+    if (isAuthenticated) {
+        return null;
+    }
+
     return (
         <>
-            <Navbar />
+            <AuthHeader />
             <main className="min-h-screen bg-dark-950 flex relative overflow-hidden pt-16">
                 {/* Background decorations - all with pointer-events-none */}
                 <div className="absolute inset-0 pointer-events-none">
@@ -221,18 +236,22 @@ export default function LoginPage() {
                                 </p>
                             </div>
                         </div>
-
-                        {/* Back to Home */}
-                        <p className="text-center text-dark-500 mt-6">
-                            <Link href="/" className="hover:text-dark-300 flex items-center justify-center gap-2 transition-colors">
-                                <ArrowRight className="w-4 h-4 rotate-180" />
-                                Back to Home
-                            </Link>
-                        </p>
                     </div>
                 </div>
             </main>
-            <Footer />
         </>
+    );
+}
+
+// Main export with Suspense boundary for useSearchParams
+export default function LoginPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen bg-dark-950 flex items-center justify-center">
+                <Loader2 className="w-8 h-8 text-primary-500 animate-spin" />
+            </div>
+        }>
+            <LoginForm />
+        </Suspense>
     );
 }

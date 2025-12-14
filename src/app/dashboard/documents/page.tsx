@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useState, useEffect } from 'react';
+import { useCallback, useState, useEffect, Suspense, memo } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useDropzone } from 'react-dropzone';
 import api, { getErrorMessage } from '@/lib/api';
@@ -13,7 +13,20 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
+// Wrap with Suspense because useSearchParams needs it in Next.js App Router
 export default function DocumentsPage() {
+    return (
+        <Suspense fallback={
+            <div className="flex items-center justify-center h-48">
+                <Loader2 className="w-8 h-8 text-primary-500 animate-spin" />
+            </div>
+        }>
+            <DocumentsContent />
+        </Suspense>
+    );
+}
+
+function DocumentsContent() {
     const searchParams = useSearchParams();
     const router = useRouter();
     const preSelectedCollectionId = searchParams.get('collection');
@@ -38,6 +51,9 @@ export default function DocumentsPage() {
     const [viewContent, setViewContent] = useState<string | null>(null);
     const [pdfBlobUrl, setPdfBlobUrl] = useState<string | null>(null);
     const [isLoadingView, setIsLoadingView] = useState(false);
+
+    // Delete loading state
+    const [deletingId, setDeletingId] = useState<number | null>(null);
 
     // Load collections on mount
     useEffect(() => {
@@ -139,12 +155,15 @@ export default function DocumentsPage() {
     const handleDelete = async (docId: number, filename: string) => {
         if (!confirm(`Delete "${filename}"? This cannot be undone.`)) return;
 
+        setDeletingId(docId);
         try {
             await api.delete(`/documents/${docId}`);
             toast.success('Document deleted');
             fetchDocuments();
         } catch (error) {
             toast.error(getErrorMessage(error));
+        } finally {
+            setDeletingId(null);
         }
     };
 
@@ -458,10 +477,15 @@ export default function DocumentsPage() {
 
                                 <button
                                     onClick={() => handleDelete(doc.id, doc.original_filename)}
-                                    className="p-2 text-dark-400 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors"
+                                    disabled={deletingId === doc.id}
+                                    className="p-2 text-dark-400 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors disabled:opacity-50"
                                     title="Delete"
                                 >
-                                    <Trash2 className="w-4 h-4" />
+                                    {deletingId === doc.id ? (
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                    ) : (
+                                        <Trash2 className="w-4 h-4" />
+                                    )}
                                 </button>
                             </div>
                         </div>

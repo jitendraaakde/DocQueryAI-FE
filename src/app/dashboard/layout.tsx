@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback, memo } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
@@ -10,6 +10,7 @@ import {
     ChevronDown, Moon, Sun, Bell, History
 } from 'lucide-react';
 
+// Move navigation array outside component to prevent recreation
 const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: Home },
     { name: 'Documents', href: '/dashboard/documents', icon: FolderOpen },
@@ -19,6 +20,38 @@ const navigation = [
     { name: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
     { name: 'Settings', href: '/dashboard/settings', icon: Settings },
 ];
+
+// Memoized navigation item to prevent re-renders
+const NavItem = memo(function NavItem({
+    item,
+    isActive,
+    onClose,
+}: {
+    item: typeof navigation[0];
+    isActive: boolean;
+    onClose: () => void;
+}) {
+    const Icon = item.icon;
+    return (
+        <Link
+            href={item.href}
+            onClick={onClose}
+            className={`
+                flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium
+                transition-all duration-200 group
+                ${isActive
+                    ? 'bg-primary-500/10 text-primary-400'
+                    : 'text-dark-400 hover:text-white hover:bg-dark-800/50'}
+            `}
+        >
+            <Icon className={`w-[18px] h-[18px] ${isActive ? 'text-primary-400' : 'text-dark-500 group-hover:text-white'}`} />
+            <span className="flex-1">{item.name}</span>
+            {isActive && <ChevronRight className="w-4 h-4 opacity-50" />}
+        </Link>
+    );
+});
+
+NavItem.displayName = "NavItem";
 
 export default function DashboardLayout({
     children,
@@ -52,12 +85,33 @@ export default function DashboardLayout({
         }
     }, [isLoading, isAuthenticated, router]);
 
+    // Memoized callbacks
+    const closeSidebar = useCallback(() => setSidebarOpen(false), []);
+    const openSidebar = useCallback(() => setSidebarOpen(true), []);
+    const toggleProfile = useCallback(() => setProfileOpen(prev => !prev), []);
+    const closeProfile = useCallback(() => setProfileOpen(false), []);
+    const closeLogoutConfirm = useCallback(() => setShowLogoutConfirm(false), []);
+
     // Theme toggle
-    const toggleTheme = () => {
-        setIsDark(!isDark);
-        document.documentElement.classList.toggle('dark', !isDark);
-        document.documentElement.classList.toggle('light', isDark);
-    };
+    const toggleTheme = useCallback(() => {
+        setIsDark(prev => {
+            const newValue = !prev;
+            document.documentElement.classList.toggle('dark', newValue);
+            document.documentElement.classList.toggle('light', !newValue);
+            return newValue;
+        });
+    }, []);
+
+    const handleLogout = useCallback(() => {
+        setShowLogoutConfirm(false);
+        logout();
+        router.push('/');
+    }, [logout, router]);
+
+    const confirmLogout = useCallback(() => {
+        setShowLogoutConfirm(true);
+        setProfileOpen(false);
+    }, []);
 
     if (isLoading) {
         return (
@@ -71,17 +125,6 @@ export default function DashboardLayout({
         return null;
     }
 
-    const handleLogout = () => {
-        setShowLogoutConfirm(false);
-        logout();
-        router.push('/');
-    };
-
-    const confirmLogout = () => {
-        setShowLogoutConfirm(true);
-        setProfileOpen(false);
-    };
-
     const userInitials = user?.full_name
         ? user.full_name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
         : user?.username?.slice(0, 2).toUpperCase() || 'U';
@@ -92,7 +135,7 @@ export default function DashboardLayout({
             {sidebarOpen && (
                 <div
                     className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden"
-                    onClick={() => setSidebarOpen(false)}
+                    onClick={closeSidebar}
                 />
             )}
 
@@ -113,7 +156,7 @@ export default function DashboardLayout({
                             <span className="text-lg font-bold bg-gradient-to-r from-white to-primary-200 bg-clip-text text-transparent">DocQuery AI</span>
                         </Link>
                         <button
-                            onClick={() => setSidebarOpen(false)}
+                            onClick={closeSidebar}
                             className="lg:hidden text-dark-400 hover:text-white p-1"
                         >
                             <X className="w-5 h-5" />
@@ -125,24 +168,13 @@ export default function DashboardLayout({
                         {navigation.map((item) => {
                             const isActive = pathname === item.href ||
                                 (item.href !== '/dashboard' && pathname.startsWith(item.href));
-
                             return (
-                                <Link
+                                <NavItem
                                     key={item.name}
-                                    href={item.href}
-                                    onClick={() => setSidebarOpen(false)}
-                                    className={`
-                                        flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium
-                                        transition-all duration-200 group
-                                        ${isActive
-                                            ? 'bg-primary-500/10 text-primary-400'
-                                            : 'text-dark-400 hover:text-white hover:bg-dark-800/50'}
-                                    `}
-                                >
-                                    <item.icon className={`w-[18px] h-[18px] ${isActive ? 'text-primary-400' : 'text-dark-500 group-hover:text-white'}`} />
-                                    <span className="flex-1">{item.name}</span>
-                                    {isActive && <ChevronRight className="w-4 h-4 opacity-50" />}
-                                </Link>
+                                    item={item}
+                                    isActive={isActive}
+                                    onClose={closeSidebar}
+                                />
                             );
                         })}
                     </nav>
@@ -169,7 +201,7 @@ export default function DashboardLayout({
                         {/* Left: Mobile menu + Page title */}
                         <div className="flex items-center gap-3">
                             <button
-                                onClick={() => setSidebarOpen(true)}
+                                onClick={openSidebar}
                                 className="lg:hidden text-dark-400 hover:text-white p-1.5 rounded-lg hover:bg-dark-800"
                             >
                                 <Menu className="w-5 h-5" />
@@ -195,7 +227,7 @@ export default function DashboardLayout({
                             {/* Profile Dropdown */}
                             <div className="relative" ref={profileRef}>
                                 <button
-                                    onClick={() => setProfileOpen(!profileOpen)}
+                                    onClick={toggleProfile}
                                     className="flex items-center gap-2 p-1.5 pr-3 rounded-lg hover:bg-dark-800 transition-colors"
                                 >
                                     <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary-500 to-accent flex items-center justify-center text-white text-sm font-semibold">
@@ -220,7 +252,7 @@ export default function DashboardLayout({
                                         <div className="py-1">
                                             <Link
                                                 href="/dashboard/settings"
-                                                onClick={() => setProfileOpen(false)}
+                                                onClick={closeProfile}
                                                 className="flex items-center gap-3 px-4 py-2 text-sm text-dark-300 hover:text-white hover:bg-dark-700/50"
                                             >
                                                 <Settings className="w-4 h-4" />
@@ -256,7 +288,7 @@ export default function DashboardLayout({
                     {/* Backdrop */}
                     <div
                         className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-                        onClick={() => setShowLogoutConfirm(false)}
+                        onClick={closeLogoutConfirm}
                     />
                     {/* Modal */}
                     <div className="relative bg-dark-800 border border-dark-700 rounded-2xl p-6 shadow-2xl w-full max-w-sm mx-4">
@@ -270,7 +302,7 @@ export default function DashboardLayout({
                             </p>
                             <div className="flex gap-3">
                                 <button
-                                    onClick={() => setShowLogoutConfirm(false)}
+                                    onClick={closeLogoutConfirm}
                                     className="flex-1 px-4 py-2.5 rounded-xl bg-dark-700 text-dark-300 hover:text-white hover:bg-dark-600 font-medium transition-colors"
                                 >
                                     Cancel

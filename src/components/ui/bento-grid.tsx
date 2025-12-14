@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { memo } from 'react';
 import { cn } from '@/lib/utils';
 
 interface BentoGridProps {
@@ -8,7 +8,7 @@ interface BentoGridProps {
     children?: React.ReactNode;
 }
 
-export function BentoGrid({ className, children }: BentoGridProps) {
+const BentoGrid = memo(function BentoGrid({ className, children }: BentoGridProps) {
     return (
         <div
             className={cn(
@@ -19,7 +19,9 @@ export function BentoGrid({ className, children }: BentoGridProps) {
             {children}
         </div>
     );
-}
+});
+
+BentoGrid.displayName = "BentoGrid";
 
 interface BentoGridItemProps {
     className?: string;
@@ -29,7 +31,7 @@ interface BentoGridItemProps {
     icon?: React.ReactNode;
 }
 
-export function BentoGridItem({
+const BentoGridItem = memo(function BentoGridItem({
     className,
     title,
     description,
@@ -58,6 +60,9 @@ export function BentoGridItem({
             </div>
         </div>
     );
-}
+});
 
+BentoGridItem.displayName = "BentoGridItem";
+
+export { BentoGrid, BentoGridItem };
 export default BentoGrid;
