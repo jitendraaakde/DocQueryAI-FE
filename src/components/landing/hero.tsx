@@ -7,8 +7,13 @@ import { BackgroundBeams } from '@/components/ui/background-beams';
 import { Meteors } from '@/components/ui/meteors';
 import { SparklesCore } from '@/components/ui/sparkles-core';
 import { EncryptedText } from '@/components/ui/encrypted-text';
+import { useServiceWakeUp } from '@/hooks/useServiceWakeUp';
 
 const Hero = memo(function Hero() {
+    // Wake up backend and Weaviate services on cold start
+    // This runs health checks until both services are healthy, then stops
+    useServiceWakeUp();
+
     return (
         <section className="relative min-h-screen flex items-center justify-center overflow-hidden pt-20">
             {/* Background */}
