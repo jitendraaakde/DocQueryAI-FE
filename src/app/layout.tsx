@@ -4,6 +4,7 @@ import './globals.css';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { ThemeProvider } from '@/contexts/theme-context';
+import { SettingsProvider } from '@/contexts/settings-context';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -22,35 +23,36 @@ export default function RootLayout({
         <html lang="en" className="dark" suppressHydrationWarning>
             <body className={inter.className}>
                 <ThemeProvider>
-                    <AuthProvider>
-                        {children}
-                        <Toaster
-                            position="top-right"
-                            toastOptions={{
-                                duration: 4000,
-                                style: {
-                                    background: '#1e293b',
-                                    color: '#f8fafc',
-                                    border: '1px solid #334155',
-                                },
-                                success: {
-                                    iconTheme: {
-                                        primary: '#10b981',
-                                        secondary: '#f8fafc',
+                    <SettingsProvider>
+                        <AuthProvider>
+                            {children}
+                            <Toaster
+                                position="top-right"
+                                toastOptions={{
+                                    duration: 4000,
+                                    style: {
+                                        background: '#1e293b',
+                                        color: '#f8fafc',
+                                        border: '1px solid #334155',
                                     },
-                                },
-                                error: {
-                                    iconTheme: {
-                                        primary: '#ef4444',
-                                        secondary: '#f8fafc',
+                                    success: {
+                                        iconTheme: {
+                                            primary: '#10b981',
+                                            secondary: '#f8fafc',
+                                        },
                                     },
-                                },
-                            }}
-                        />
-                    </AuthProvider>
+                                    error: {
+                                        iconTheme: {
+                                            primary: '#ef4444',
+                                            secondary: '#f8fafc',
+                                        },
+                                    },
+                                }}
+                            />
+                        </AuthProvider>
+                    </SettingsProvider>
                 </ThemeProvider>
             </body>
         </html>
     );
 }
-

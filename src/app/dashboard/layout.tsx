@@ -4,13 +4,13 @@ import { useEffect, useState, useRef, useCallback, memo } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
+import { ProfileModal } from '@/components/ProfileModal';
 import {
     FileText, MessageSquare, FolderOpen, Settings, LogOut,
     Menu, X, ChevronRight, Home, Loader2, BarChart3, Folders,
-    ChevronDown, Moon, Sun, Bell, History
+    ChevronDown, Moon, Sun, Bell, History, User
 } from 'lucide-react';
 
-// Move navigation array outside component to prevent recreation
 const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: Home },
     { name: 'Documents', href: '/dashboard/documents', icon: FolderOpen },
@@ -21,7 +21,6 @@ const navigation = [
     { name: 'Settings', href: '/dashboard/settings', icon: Settings },
 ];
 
-// Memoized navigation item to prevent re-renders
 const NavItem = memo(function NavItem({
     item,
     isActive,
@@ -64,10 +63,10 @@ export default function DashboardLayout({
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [profileOpen, setProfileOpen] = useState(false);
     const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+    const [showProfileModal, setShowProfileModal] = useState(false);
     const [isDark, setIsDark] = useState(true);
     const profileRef = useRef<HTMLDivElement>(null);
 
-    // Close profile dropdown on outside click
     useEffect(() => {
         const handleClickOutside = (e: MouseEvent) => {
             if (profileRef.current && !profileRef.current.contains(e.target as Node)) {
@@ -78,21 +77,18 @@ export default function DashboardLayout({
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    // Redirect if not authenticated
     useEffect(() => {
         if (!isLoading && !isAuthenticated) {
             router.push('/login');
         }
     }, [isLoading, isAuthenticated, router]);
 
-    // Memoized callbacks
     const closeSidebar = useCallback(() => setSidebarOpen(false), []);
     const openSidebar = useCallback(() => setSidebarOpen(true), []);
     const toggleProfile = useCallback(() => setProfileOpen(prev => !prev), []);
     const closeProfile = useCallback(() => setProfileOpen(false), []);
     const closeLogoutConfirm = useCallback(() => setShowLogoutConfirm(false), []);
 
-    // Theme toggle
     const toggleTheme = useCallback(() => {
         setIsDark(prev => {
             const newValue = !prev;
@@ -110,6 +106,11 @@ export default function DashboardLayout({
 
     const confirmLogout = useCallback(() => {
         setShowLogoutConfirm(true);
+        setProfileOpen(false);
+    }, []);
+
+    const openProfileModal = useCallback(() => {
+        setShowProfileModal(true);
         setProfileOpen(false);
     }, []);
 
@@ -250,6 +251,13 @@ export default function DashboardLayout({
 
                                         {/* Links */}
                                         <div className="py-1">
+                                            <button
+                                                onClick={openProfileModal}
+                                                className="flex items-center gap-3 w-full px-4 py-2 text-sm text-dark-300 hover:text-white hover:bg-dark-700/50"
+                                            >
+                                                <User className="w-4 h-4" />
+                                                Profile
+                                            </button>
                                             <Link
                                                 href="/dashboard/settings"
                                                 onClick={closeProfile}
@@ -318,6 +326,11 @@ export default function DashboardLayout({
                     </div>
                 </div>
             )}
+
+            <ProfileModal
+                isOpen={showProfileModal}
+                onClose={() => setShowProfileModal(false)}
+            />
         </div>
     );
 }
