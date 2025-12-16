@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
     MessageSquare, Loader2, Clock, Search,
-    Trash2, ChevronRight, Sparkles, Plus
+    Trash2, ChevronRight, ChevronLeft, Sparkles, Plus
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import {
@@ -31,6 +31,8 @@ export default function ChatHistoryPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [deletingId, setDeletingId] = useState<number | null>(null);
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10;
 
     useEffect(() => {
         const loadSessions = async () => {
@@ -73,6 +75,17 @@ export default function ChatHistoryPage() {
         (s.title ?? '').toLowerCase().includes(searchQuery.toLowerCase())
     );
 
+    // Pagination calculations
+    const totalPages = Math.ceil(filteredSessions.length / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const paginatedSessions = filteredSessions.slice(startIndex, startIndex + itemsPerPage);
+
+    // Reset to page 1 when search changes
+    const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setSearchQuery(e.target.value);
+        setCurrentPage(1);
+    };
+
     return (
         <div className="max-w-4xl mx-auto">
             {/* Header */}
@@ -97,7 +110,7 @@ export default function ChatHistoryPage() {
                         type="text"
                         placeholder="Search conversations..."
                         value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
+                        onChange={handleSearchChange}
                         className="w-full pl-12 pr-4 py-3 bg-dark-800 border border-dark-700 rounded-xl text-white placeholder-dark-500 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500"
                     />
                 </div>
@@ -143,7 +156,7 @@ export default function ChatHistoryPage() {
                 </div>
             ) : (
                 <div className="space-y-3">
-                    {filteredSessions.map((session) => (
+                    {paginatedSessions.map((session) => (
                         <div
                             key={session.id}
                             onClick={() => handleContinueChat(session.id)}
@@ -194,14 +207,44 @@ export default function ChatHistoryPage() {
                     ))}
                 </div>
             )}
+            {/* Pagination Controls */}
+            {!isLoading && totalPages > 1 && (
+                <div className="mt-6 flex items-center justify-center gap-4">
+                    <button
+                        onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                        disabled={currentPage === 1}
+                        className="flex items-center gap-2 px-4 py-2 rounded-lg bg-dark-800 border border-dark-700 text-dark-300 hover:text-white hover:bg-dark-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                        <ChevronLeft className="w-4 h-4" />
+                        Previous
+                    </button>
+
+                    <div className="flex items-center gap-2">
+                        <span className="text-dark-400">Page</span>
+                        <span className="px-3 py-1 rounded-lg bg-primary-500/10 text-primary-400 font-medium">
+                            {currentPage}
+                        </span>
+                        <span className="text-dark-400">of {totalPages}</span>
+                    </div>
+
+                    <button
+                        onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                        disabled={currentPage === totalPages}
+                        className="flex items-center gap-2 px-4 py-2 rounded-lg bg-dark-800 border border-dark-700 text-dark-300 hover:text-white hover:bg-dark-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                        Next
+                        <ChevronRight className="w-4 h-4" />
+                    </button>
+                </div>
+            )}
 
             {/* Stats */}
             {!isLoading && sessions.length > 0 && (
-                <div className="mt-8 pt-6 border-t border-dark-800">
+                <div className="mt-6 pt-6 border-t border-dark-800">
                     <p className="text-center text-sm text-dark-500">
-                        {sessions.length} total conversation{sessions.length !== 1 ? 's' : ''}
+                        Showing {startIndex + 1}-{Math.min(startIndex + itemsPerPage, filteredSessions.length)} of {filteredSessions.length} conversation{filteredSessions.length !== 1 ? 's' : ''}
                         {searchQuery && filteredSessions.length !== sessions.length && (
-                            <span> • {filteredSessions.length} matching search</span>
+                            <span> • {sessions.length} total</span>
                         )}
                     </p>
                 </div>

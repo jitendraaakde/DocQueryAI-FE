@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef, useCallback, memo } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useAuth } from '@/contexts/AuthContext';
 import { ProfileModal } from '@/components/ProfileModal';
 import {
@@ -150,11 +151,17 @@ export default function DashboardLayout({
                 <div className="flex flex-col h-full max-h-screen">
                     {/* Logo */}
                     <div className="flex items-center justify-between p-5 border-b border-dark-800">
-                        <Link href="/dashboard" className="flex items-center gap-2.5">
-                            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary-500 to-accent flex items-center justify-center shadow-lg shadow-primary-500/20">
-                                <FileText className="w-5 h-5 text-white" />
+                        <Link href="/dashboard" className="flex items-center">
+                            <div className="h-11">
+                                <Image
+                                    src="/DocQueryAI_logo.png"
+                                    alt="DocQuery AI"
+                                    width={180}
+                                    height={44}
+                                    className="h-full w-auto object-contain"
+                                    priority
+                                />
                             </div>
-                            <span className="text-lg font-bold bg-gradient-to-r from-white to-primary-200 bg-clip-text text-transparent">DocQuery AI</span>
                         </Link>
                         <button
                             onClick={closeSidebar}
@@ -167,8 +174,25 @@ export default function DashboardLayout({
                     {/* Navigation */}
                     <nav className="flex-1 p-3 space-y-0.5 overflow-y-auto">
                         {navigation.map((item) => {
-                            const isActive = pathname === item.href ||
-                                (item.href !== '/dashboard' && pathname.startsWith(item.href));
+                            // Special handling for routes that could conflict
+                            // Chat History (/dashboard/chat-history) should not activate when on Ask AI (/dashboard/chat)
+                            // Ask AI (/dashboard/chat) should not activate when on Chat History
+                            let isActive = false;
+
+                            if (item.href === '/dashboard') {
+                                // Dashboard only active on exact match
+                                isActive = pathname === '/dashboard';
+                            } else if (item.href === '/dashboard/chat') {
+                                // Ask AI active only on exact /dashboard/chat or /dashboard/chat?session=xxx
+                                isActive = pathname === '/dashboard/chat';
+                            } else if (item.href === '/dashboard/chat-history') {
+                                // Chat History active only on exact match
+                                isActive = pathname === '/dashboard/chat-history';
+                            } else {
+                                // Other routes use startsWith
+                                isActive = pathname.startsWith(item.href);
+                            }
+
                             return (
                                 <NavItem
                                     key={item.name}
@@ -211,11 +235,6 @@ export default function DashboardLayout({
 
                         {/* Right: Actions + Profile */}
                         <div className="flex items-center gap-2">
-                            {/* Notifications */}
-                            <button className="p-2 rounded-lg text-dark-400 hover:text-white hover:bg-dark-800 transition-colors relative">
-                                <Bell className="w-5 h-5" />
-                                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-primary-500 rounded-full" />
-                            </button>
 
                             {/* Theme Toggle */}
                             <button
@@ -231,8 +250,18 @@ export default function DashboardLayout({
                                     onClick={toggleProfile}
                                     className="flex items-center gap-2 p-1.5 pr-3 rounded-lg hover:bg-dark-800 transition-colors"
                                 >
-                                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary-500 to-accent flex items-center justify-center text-white text-sm font-semibold">
-                                        {userInitials}
+                                    <div className="w-8 h-8 rounded-full overflow-hidden bg-gradient-to-br from-primary-500 to-accent flex items-center justify-center text-white text-sm font-semibold">
+                                        {user?.avatar_url ? (
+                                            <Image
+                                                src={user.avatar_url}
+                                                alt={user.full_name || user.username}
+                                                width={32}
+                                                height={32}
+                                                className="w-full h-full object-cover"
+                                            />
+                                        ) : (
+                                            userInitials
+                                        )}
                                     </div>
                                     <span className="hidden sm:block text-sm font-medium text-white max-w-[100px] truncate">
                                         {user?.full_name || user?.username}
@@ -258,14 +287,6 @@ export default function DashboardLayout({
                                                 <User className="w-4 h-4" />
                                                 Profile
                                             </button>
-                                            <Link
-                                                href="/dashboard/settings"
-                                                onClick={closeProfile}
-                                                className="flex items-center gap-3 px-4 py-2 text-sm text-dark-300 hover:text-white hover:bg-dark-700/50"
-                                            >
-                                                <Settings className="w-4 h-4" />
-                                                Settings
-                                            </Link>
                                         </div>
 
                                         {/* Logout */}

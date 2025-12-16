@@ -2,7 +2,8 @@
 
 import React, { memo } from 'react';
 import Link from 'next/link';
-import { FileText, Github, Twitter, Linkedin } from 'lucide-react';
+import Image from 'next/image';
+import { Github, Twitter, Linkedin } from 'lucide-react';
 
 // Move data outside component to prevent recreation
 const footerLinks = {
@@ -13,7 +14,6 @@ const footerLinks = {
     ],
     company: [
         { name: 'About', href: '/about' },
-        { name: 'Blog', href: '/blog' },
         { name: 'Contact', href: '/contact' },
     ],
     legal: [
@@ -37,11 +37,16 @@ const Footer = memo(function Footer() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-12 mb-12">
                     {/* Brand */}
                     <div className="lg:col-span-2">
-                        <Link href="/" className="flex items-center gap-3 mb-4">
-                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-500 via-primary-600 to-accent flex items-center justify-center">
-                                <FileText className="w-5 h-5 text-white" />
+                        <Link href="/" className="flex items-center mb-4">
+                            <div className="h-12">
+                                <Image
+                                    src="/DocQueryAI_logo.png"
+                                    alt="DocQuery AI"
+                                    width={200}
+                                    height={48}
+                                    className="h-full w-auto object-contain"
+                                />
                             </div>
-                            <span className="text-xl font-bold text-white">DocQuery AI</span>
                         </Link>
                         <p className="text-dark-400 text-sm max-w-xs mb-6">
                             Transform your documents into an intelligent knowledge base. Upload, search, and get AI-powered answers.

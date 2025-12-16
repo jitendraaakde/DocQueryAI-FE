@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect, useRef, memo, useCallback } from 'react';
 import Link from 'next/link';
-import { FileText, Menu, X } from 'lucide-react';
+import Image from 'next/image';
+import { Menu, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const Navbar = memo(function Navbar() {
@@ -59,14 +60,17 @@ const Navbar = memo(function Navbar() {
             >
                 <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
                     {/* Logo */}
-                    <Link href="/" className="flex items-center gap-3 group">
-                        <div className="relative w-10 h-10 rounded-xl bg-gradient-to-br from-primary-500 via-primary-600 to-accent flex items-center justify-center overflow-hidden transition-transform hover:scale-105 active:scale-95">
-                            <FileText className="w-5 h-5 text-white relative z-10" />
-                            <div className="absolute inset-0 bg-gradient-to-tr from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <Link href="/" className="flex items-center group">
+                        <div className="h-12 transition-transform hover:scale-105 active:scale-95">
+                            <Image
+                                src="/DocQueryAI_logo.png"
+                                alt="DocQuery AI"
+                                width={200}
+                                height={48}
+                                className="h-full w-auto object-contain"
+                                priority
+                            />
                         </div>
-                        <span className="text-xl font-bold bg-gradient-to-r from-white via-white to-primary-200 bg-clip-text text-transparent">
-                            DocQuery AI
-                        </span>
                     </Link>
 
                     {/* Desktop Navigation */}

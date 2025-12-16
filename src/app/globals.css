@@ -383,3 +383,52 @@ body {
   width: 200px;
   height: 200px;
 }
+
+/* Chip Carousel Styles */
+.chip-carousel-container {
+  position: relative;
+  mask-image: linear-gradient(to right, transparent 0%, black 5%, black 95%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, black 5%, black 95%, transparent 100%);
+}
+
+.chip-carousel {
+  display: flex;
+  gap: 0.75rem;
+  width: max-content;
+  animation: slide-chips 30s linear infinite;
+}
+
+.chip-carousel:hover {
+  animation-play-state: paused;
+}
+
+@keyframes slide-chips {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.chip-item {
+  background: linear-gradient(135deg,
+      rgba(99, 102, 241, 0.1) 0%,
+      rgba(129, 140, 248, 0.05) 100%);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.chip-item:hover {
+  background: linear-gradient(135deg,
+      rgba(99, 102, 241, 0.2) 0%,
+      rgba(129, 140, 248, 0.1) 100%);
+  border-color: rgba(99, 102, 241, 0.5);
+  box-shadow: 0 0 20px rgba(99, 102, 241, 0.2),
+    0 4px 15px rgba(0, 0, 0, 0.2);
+  transform: translateY(-2px) scale(1.02);
+}
+
+.animate-slide-chips {
+  animation: slide-chips 30s linear infinite;
+}

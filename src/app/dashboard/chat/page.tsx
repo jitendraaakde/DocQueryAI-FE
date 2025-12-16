@@ -8,7 +8,8 @@ import {
     Send, Loader2, FileText,
     Sparkles, ThumbsUp, ThumbsDown,
     PanelRight, PanelRightClose,
-    CheckCircle2, Circle, Search
+    CheckCircle2, Circle, Search,
+    Bot, User, ArrowDown
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import ReactMarkdown from 'react-markdown';
@@ -55,9 +56,12 @@ function ChatContent() {
     const [showRightSidebar, setShowRightSidebar] = useState(true);
     const [currentSession, setCurrentSession] = useState<ChatSession | null>(null);
     const [docSearchQuery, setDocSearchQuery] = useState('');
+    const [showScrollButton, setShowScrollButton] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
+    const messagesContainerRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLTextAreaElement>(null);
     const streamingRef = useRef<NodeJS.Timeout | null>(null);
+    const userScrolledRef = useRef(false);
 
     // Load session from URL query parameter
     useEffect(() => {
@@ -106,10 +110,29 @@ function ChatContent() {
         fetchDocs();
     }, []);
 
-    // Scroll to bottom on new messages
+    // Smart scroll - only auto-scroll if user hasn't scrolled up
+    const scrollToBottom = useCallback(() => {
+        if (!userScrolledRef.current) {
+            messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+        }
+    }, []);
+
+    // Track scroll position
+    const handleScroll = useCallback(() => {
+        const container = messagesContainerRef.current;
+        if (!container) return;
+
+        const { scrollTop, scrollHeight, clientHeight } = container;
+        const isAtBottom = scrollHeight - scrollTop - clientHeight < 100;
+
+        userScrolledRef.current = !isAtBottom;
+        setShowScrollButton(!isAtBottom && messages.length > 0);
+    }, [messages.length]);
+
+    // Scroll to bottom on new messages (only if at bottom)
     useEffect(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, [messages]);
+        scrollToBottom();
+    }, [messages, scrollToBottom]);
 
     // Cleanup streaming on unmount
     useEffect(() => {
@@ -259,7 +282,11 @@ function ChatContent() {
             <div className="flex-1 flex flex-col h-full min-w-0">
 
                 {/* Chat Messages */}
-                <div className="flex-1 overflow-y-auto flex flex-col">
+                <div
+                    ref={messagesContainerRef}
+                    onScroll={handleScroll}
+                    className="flex-1 overflow-y-auto flex flex-col relative"
+                >
                     <div className={`max-w-3xl mx-auto p-4 w-full ${messages.length === 0 ? 'flex-1 flex flex-col justify-center' : 'space-y-6'}`}>
                         {messages.length === 0 ? (
                             <div className="flex flex-col items-center justify-center text-center px-4 relative py-8">
@@ -280,27 +307,40 @@ function ChatContent() {
                                     Ask questions about your documents. I'll analyze them and provide intelligent answers with source citations.
                                 </p>
 
-                                {/* Enhanced Suggestion Cards */}
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-lg w-full">
-                                    {[
-                                        { icon: "✨", text: "Summarize key insights", query: "Summarize the key insights from my documents" },
-                                        { icon: "🔍", text: "Find specific information", query: "Find information about..." },
-                                        { icon: "📊", text: "Analyze trends & patterns", query: "Analyze the trends and patterns in" },
-                                        { icon: "💡", text: "Explain complex topics", query: "Explain in simple terms:" }
-                                    ].map((item, i) => (
-                                        <button
-                                            key={i}
-                                            onClick={() => setInput(item.query)}
-                                            className="chat-suggestion-card group flex items-center gap-3 p-4 rounded-xl text-left"
-                                        >
-                                            <span className="text-lg group-hover:scale-110 transition-transform duration-300">
-                                                {item.icon}
-                                            </span>
-                                            <span className="text-sm font-medium text-dark-200 group-hover:text-white transition-colors">
-                                                {item.text}
-                                            </span>
-                                        </button>
-                                    ))}
+                                {/* Animated Suggestion Chips Carousel */}
+                                <div className="w-full max-w-2xl overflow-hidden">
+                                    <div className="chip-carousel-container">
+                                        <div className="chip-carousel flex gap-3 animate-slide-chips">
+                                            {[
+                                                { icon: "✨", text: "Summarize the key insights from all my documents", query: "Summarize the key insights from my documents" },
+                                                { icon: "🔍", text: "Find specific information about a topic", query: "Find information about..." },
+                                                { icon: "📊", text: "Analyze trends and patterns in the data", query: "Analyze the trends and patterns in" },
+                                                { icon: "💡", text: "Explain complex topics in simple terms", query: "Explain in simple terms:" },
+                                                { icon: "📝", text: "Compare different sections or documents", query: "Compare the following:" },
+                                                { icon: "🎯", text: "Extract action items and next steps", query: "What are the action items from" },
+                                                { icon: "📈", text: "Generate a comprehensive summary", query: "Give me a comprehensive summary of" },
+                                                { icon: "🔮", text: "Predict outcomes based on the data", query: "Based on the data, what predictions can you make about" }
+                                            ].concat([
+                                                { icon: "✨", text: "Summarize the key insights from all my documents", query: "Summarize the key insights from my documents" },
+                                                { icon: "🔍", text: "Find specific information about a topic", query: "Find information about..." },
+                                                { icon: "📊", text: "Analyze trends and patterns in the data", query: "Analyze the trends and patterns in" },
+                                                { icon: "💡", text: "Explain complex topics in simple terms", query: "Explain in simple terms:" }
+                                            ]).map((item, i) => (
+                                                <button
+                                                    key={i}
+                                                    onClick={() => setInput(item.query)}
+                                                    className="chip-item group flex items-center gap-2 px-5 py-3 rounded-full whitespace-nowrap text-left flex-shrink-0"
+                                                >
+                                                    <span className="text-base group-hover:scale-125 transition-transform duration-300">
+                                                        {item.icon}
+                                                    </span>
+                                                    <span className="text-sm font-medium text-dark-200 group-hover:text-white transition-colors">
+                                                        {item.text}
+                                                    </span>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
                                 </div>
 
                                 {/* Bottom Hint */}
@@ -314,15 +354,15 @@ function ChatContent() {
                                 <div key={message.id} className={`flex gap-3 ${message.role === 'user' ? 'flex-row-reverse' : ''}`}>
                                     {/* Avatar */}
                                     <div className={`
-                                    w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0
-                                    ${message.role === 'assistant'
-                                            ? 'bg-gradient-to-br from-primary-500 to-accent'
-                                            : 'bg-dark-700'}
-                                `}>
+                                        w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg
+                                        ${message.role === 'assistant'
+                                            ? 'bg-gradient-to-br from-primary-500 via-primary-600 to-accent'
+                                            : 'bg-gradient-to-br from-dark-600 to-dark-700 border border-dark-500/50'}
+                                    `}>
                                         {message.role === 'assistant' ? (
-                                            <Sparkles className="w-4 h-4 text-white" />
+                                            <Bot className="w-5 h-5 text-white" />
                                         ) : (
-                                            <span className="text-[10px] font-semibold text-dark-300">You</span>
+                                            <User className="w-5 h-5 text-dark-200" />
                                         )}
                                     </div>
 
@@ -417,6 +457,21 @@ function ChatContent() {
                         )}
                         <div ref={messagesEndRef} />
                     </div>
+
+                    {/* Scroll to bottom button */}
+                    {showScrollButton && (
+                        <button
+                            onClick={() => {
+                                userScrolledRef.current = false;
+                                setShowScrollButton(false);
+                                messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+                            }}
+                            className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 px-4 py-2 rounded-full bg-dark-800/90 backdrop-blur-sm border border-dark-600 text-dark-200 hover:text-white hover:bg-dark-700 transition-all shadow-lg hover:shadow-xl"
+                        >
+                            <ArrowDown className="w-4 h-4" />
+                            <span className="text-sm font-medium">Scroll to bottom</span>
+                        </button>
+                    )}
                 </div>
 
                 {/* Enhanced Input Area */}

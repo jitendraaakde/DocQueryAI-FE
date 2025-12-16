@@ -1,8 +1,10 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, ReactNode } from 'react';
+import { signInWithPopup, signOut as firebaseSignOut } from 'firebase/auth';
 import { User, Token, UserLogin, UserCreate } from '@/types';
 import api, { tokenManager, getErrorMessage } from '@/lib/api';
+import { auth, googleProvider } from '@/lib/firebase';
 
 interface AuthContextType {
     user: User | null;
@@ -10,6 +12,7 @@ interface AuthContextType {
     isAuthenticated: boolean;
     login: (credentials: UserLogin) => Promise<void>;
     register: (data: UserCreate) => Promise<void>;
+    loginWithGoogle: () => Promise<void>;
     logout: () => void;
     refreshUser: () => Promise<void>;
 }
@@ -55,9 +58,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await login({ email: data.email, password: data.password });
     }, [login]);
 
+    const loginWithGoogle = useCallback(async () => {
+        try {
+            // Sign in with Google using Firebase
+            const result = await signInWithPopup(auth, googleProvider);
+            const idToken = await result.user.getIdToken();
+
+            // Send the ID token to our backend
+            const response = await api.post<Token>('/auth/google', { id_token: idToken });
+            tokenManager.setTokens(response.data);
+            await refreshUser();
+        } catch (error: unknown) {
+            console.error('Google login error:', error);
+            // Sign out from Firebase if backend auth fails
+            await firebaseSignOut(auth);
+            throw error;
+        }
+    }, [refreshUser]);
+
     const logout = useCallback(() => {
         tokenManager.clearTokens();
         setUser(null);
+        // Sign out from Firebase as well
+        firebaseSignOut(auth).catch(console.error);
         // Redirect handled by component
     }, []);
 
@@ -68,9 +91,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isAuthenticated: !!user,
         login,
         register,
+        loginWithGoogle,
         logout,
         refreshUser,
-    }), [user, isLoading, login, register, logout, refreshUser]);
+    }), [user, isLoading, login, register, loginWithGoogle, logout, refreshUser]);
 
     return (
         <AuthContext.Provider value={contextValue}>
@@ -86,3 +110,4 @@ export function useAuth() {
     }
     return context;
 }
+

@@ -80,8 +80,8 @@ export default function SettingsPage() {
     };
 
     return (
-        <div className="max-w-5xl mx-auto">
-            <div className="mb-8">
+        <div className="h-full flex flex-col">
+            <div className="mb-6">
                 <h1 className="text-3xl font-bold text-white mb-2 flex items-center gap-3">
                     <Sliders className="w-8 h-8 text-primary-400" />
                     Settings
@@ -89,7 +89,7 @@ export default function SettingsPage() {
                 <p className="text-dark-400">Configure your AI assistant and document processing preferences.</p>
             </div>
 
-            <div className="flex flex-col lg:flex-row gap-6">
+            <div className="flex-1 flex flex-col lg:flex-row gap-6 min-h-0">
                 <div className="lg:w-64 flex-shrink-0">
                     <nav className="card p-2 space-y-1">
                         {tabs.map((tab) => {
@@ -99,11 +99,10 @@ export default function SettingsPage() {
                                 <button
                                     key={tab.id}
                                     onClick={() => setActiveTab(tab.id)}
-                                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${
-                                        isActive
+                                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${isActive
                                             ? 'bg-primary-500/10 text-primary-400'
                                             : 'text-dark-400 hover:text-white hover:bg-dark-800/50'
-                                    }`}
+                                        }`}
                                 >
                                     <Icon className={`w-5 h-5 ${isActive ? 'text-primary-400' : 'text-dark-500'}`} />
                                     <span className="flex-1 text-left">{tab.label}</span>
@@ -155,11 +154,10 @@ export default function SettingsPage() {
                                                 const firstModel = modelOptions[provider.value]?.[0]?.value;
                                                 if (firstModel) updateLLMSettings({ model: firstModel });
                                             }}
-                                            className={`p-4 rounded-xl border text-left transition-all ${
-                                                settings.llm.provider === provider.value
+                                            className={`p-4 rounded-xl border text-left transition-all ${settings.llm.provider === provider.value
                                                     ? 'border-primary-500 bg-primary-500/10'
                                                     : 'border-dark-700 hover:border-dark-600 bg-dark-800/50'
-                                            }`}
+                                                }`}
                                         >
                                             <p className={`font-medium ${settings.llm.provider === provider.value ? 'text-primary-400' : 'text-white'}`}>
                                                 {provider.label}
@@ -279,11 +277,10 @@ export default function SettingsPage() {
                                         <button
                                             key={ext}
                                             onClick={() => handleExtensionToggle(ext)}
-                                            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                                                settings.document.allowedExtensions.includes(ext)
+                                            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${settings.document.allowedExtensions.includes(ext)
                                                     ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
                                                     : 'bg-dark-800 text-dark-400 border border-dark-700 hover:border-dark-600'
-                                            }`}
+                                                }`}
                                         >
                                             .{ext}
                                         </button>
@@ -345,11 +342,10 @@ export default function SettingsPage() {
                                         <button
                                             key={scope.value}
                                             onClick={() => updateSearchSettings({ searchScope: scope.value as any })}
-                                            className={`w-full p-4 rounded-xl border text-left transition-all ${
-                                                settings.search.searchScope === scope.value
+                                            className={`w-full p-4 rounded-xl border text-left transition-all ${settings.search.searchScope === scope.value
                                                     ? 'border-amber-500 bg-amber-500/10'
                                                     : 'border-dark-700 hover:border-dark-600 bg-dark-800/50'
-                                            }`}
+                                                }`}
                                         >
                                             <p className={`font-medium ${settings.search.searchScope === scope.value ? 'text-amber-400' : 'text-white'}`}>
                                                 {scope.label}
@@ -382,11 +378,10 @@ export default function SettingsPage() {
                                             setTheme('dark');
                                             updateUISettings({ theme: 'dark' });
                                         }}
-                                        className={`p-6 rounded-xl border transition-all ${
-                                            theme === 'dark'
+                                        className={`p-6 rounded-xl border transition-all ${theme === 'dark'
                                                 ? 'border-violet-500 bg-violet-500/10'
                                                 : 'border-dark-700 hover:border-dark-600 bg-dark-800/50'
-                                        }`}
+                                            }`}
                                     >
                                         <div className="w-12 h-12 rounded-full bg-dark-900 border border-dark-600 flex items-center justify-center mx-auto mb-3">
                                             <Moon className={`w-6 h-6 ${theme === 'dark' ? 'text-violet-400' : 'text-dark-400'}`} />
@@ -401,11 +396,10 @@ export default function SettingsPage() {
                                             setTheme('light');
                                             updateUISettings({ theme: 'light' });
                                         }}
-                                        className={`p-6 rounded-xl border transition-all ${
-                                            theme === 'light'
+                                        className={`p-6 rounded-xl border transition-all ${theme === 'light'
                                                 ? 'border-violet-500 bg-violet-500/10'
                                                 : 'border-dark-700 hover:border-dark-600 bg-dark-800/50'
-                                        }`}
+                                            }`}
                                     >
                                         <div className="w-12 h-12 rounded-full bg-gray-100 border border-gray-300 flex items-center justify-center mx-auto mb-3">
                                             <Sun className={`w-6 h-6 ${theme === 'light' ? 'text-amber-500' : 'text-dark-400'}`} />

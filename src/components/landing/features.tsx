@@ -112,7 +112,7 @@ const Features = memo(function Features() {
                 <div className="text-center mb-16 animate-in fade-in slide-in-from-bottom-4 duration-500">
                     <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">
                         Everything You Need to
-                        <span className="block bg-gradient-to-r from-primary-400 to-accent bg-clip-text text-transparent">
+                        <span className="block mt-2 bg-gradient-to-r from-primary-400 to-accent bg-clip-text text-transparent">
                             Master Your Documents
                         </span>
                     </h2>

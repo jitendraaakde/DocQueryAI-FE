@@ -8,6 +8,7 @@ export interface User {
     is_verified: boolean;
     totp_enabled: boolean;
     avatar_url: string | null;
+    auth_provider: 'local' | 'google';
     created_at: string;
 }
 
