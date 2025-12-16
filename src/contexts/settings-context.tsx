@@ -1,12 +1,17 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { getSettings, updateSettings, deleteApiKey, SettingsWithModels, LLMProvider, LLMModel } from '@/lib/settings-api';
 
 export interface LLMSettings {
   provider: 'groq' | 'openai' | 'anthropic' | 'gemini';
   model: string;
   temperature: number;
   maxTokens: number;
+  // API key flags (not actual keys)
+  hasOpenaiKey?: boolean;
+  hasAnthropicKey?: boolean;
+  hasGeminiKey?: boolean;
 }
 
 export interface DocumentSettings {
@@ -56,11 +61,18 @@ const defaultSettings: AppSettings = {
 
 interface SettingsContextType {
   settings: AppSettings;
+  providers: LLMProvider[];
+  models: Record<string, LLMModel[]>;
+  isLoading: boolean;
+  isSaving: boolean;
   updateLLMSettings: (settings: Partial<LLMSettings>) => void;
   updateDocumentSettings: (settings: Partial<DocumentSettings>) => void;
   updateSearchSettings: (settings: Partial<SearchSettings>) => void;
   updateUISettings: (settings: Partial<UISettings>) => void;
+  saveSettingsToServer: (apiKeys?: { openai?: string; anthropic?: string; gemini?: string }) => Promise<boolean>;
+  deleteApiKeyFromServer: (provider: 'openai' | 'anthropic' | 'gemini') => Promise<boolean>;
   resetSettings: () => void;
+  refreshSettings: () => Promise<void>;
 }
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
@@ -69,21 +81,59 @@ const SETTINGS_KEY = 'docquery-settings';
 
 export function SettingsProvider({ children }: { children: React.ReactNode }) {
   const [settings, setSettings] = useState<AppSettings>(defaultSettings);
+  const [providers, setProviders] = useState<LLMProvider[]>([]);
+  const [models, setModels] = useState<Record<string, LLMModel[]>>({});
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
   const [mounted, setMounted] = useState(false);
 
-  useEffect(() => {
-    const savedSettings = localStorage.getItem(SETTINGS_KEY);
-    if (savedSettings) {
-      try {
-        const parsed = JSON.parse(savedSettings);
-        setSettings({ ...defaultSettings, ...parsed });
-      } catch {
-        setSettings(defaultSettings);
+  // Fetch settings from server
+  const refreshSettings = useCallback(async () => {
+    try {
+      const data = await getSettings();
+
+      // Update providers and models
+      setProviders(data.providers);
+      setModels(data.models);
+
+      // If user has saved settings, use them
+      if (data.settings) {
+        setSettings(prev => ({
+          ...prev,
+          llm: {
+            provider: data.settings!.llm_provider as LLMSettings['provider'],
+            model: data.settings!.llm_model,
+            temperature: data.settings!.temperature,
+            maxTokens: data.settings!.max_tokens,
+            hasOpenaiKey: data.settings!.has_openai_key,
+            hasAnthropicKey: data.settings!.has_anthropic_key,
+            hasGeminiKey: data.settings!.has_gemini_key,
+          },
+        }));
       }
+    } catch (error) {
+      console.error('Failed to fetch settings:', error);
+      // Fall back to localStorage
+      const savedSettings = localStorage.getItem(SETTINGS_KEY);
+      if (savedSettings) {
+        try {
+          const parsed = JSON.parse(savedSettings);
+          setSettings({ ...defaultSettings, ...parsed });
+        } catch {
+          // Ignore parse errors
+        }
+      }
+    } finally {
+      setIsLoading(false);
     }
-    setMounted(true);
   }, []);
 
+  useEffect(() => {
+    refreshSettings();
+    setMounted(true);
+  }, [refreshSettings]);
+
+  // Save to localStorage as backup
   useEffect(() => {
     if (mounted) {
       localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
@@ -118,6 +168,61 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     }));
   };
 
+  const saveSettingsToServer = async (apiKeys?: { openai?: string; anthropic?: string; gemini?: string }): Promise<boolean> => {
+    setIsSaving(true);
+    try {
+      const payload: Record<string, unknown> = {
+        llm_provider: settings.llm.provider,
+        llm_model: settings.llm.model,
+        temperature: settings.llm.temperature,
+        max_tokens: settings.llm.maxTokens,
+      };
+
+      // Include API keys if provided
+      if (apiKeys?.openai) payload.openai_api_key = apiKeys.openai;
+      if (apiKeys?.anthropic) payload.anthropic_api_key = apiKeys.anthropic;
+      if (apiKeys?.gemini) payload.gemini_api_key = apiKeys.gemini;
+
+      const result = await updateSettings(payload);
+
+      // Update local state with result
+      setSettings(prev => ({
+        ...prev,
+        llm: {
+          ...prev.llm,
+          hasOpenaiKey: result.has_openai_key,
+          hasAnthropicKey: result.has_anthropic_key,
+          hasGeminiKey: result.has_gemini_key,
+        },
+      }));
+
+      return true;
+    } catch (error) {
+      console.error('Failed to save settings:', error);
+      return false;
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const deleteApiKeyFromServer = async (provider: 'openai' | 'anthropic' | 'gemini'): Promise<boolean> => {
+    try {
+      await deleteApiKey(provider);
+
+      // Update local state
+      const keyField = `has${provider.charAt(0).toUpperCase() + provider.slice(1)}Key` as keyof LLMSettings;
+      setSettings(prev => ({
+        ...prev,
+        llm: { ...prev.llm, [keyField]: false },
+      }));
+
+      return true;
+    } catch (error) {
+      console.error('Failed to delete API key:', error);
+      return false;
+    }
+  };
+
   const resetSettings = () => {
     setSettings(defaultSettings);
   };
@@ -130,11 +235,18 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     <SettingsContext.Provider
       value={{
         settings,
+        providers,
+        models,
+        isLoading,
+        isSaving,
         updateLLMSettings,
         updateDocumentSettings,
         updateSearchSettings,
         updateUISettings,
+        saveSettingsToServer,
+        deleteApiKeyFromServer,
         resetSettings,
+        refreshSettings,
       }}
     >
       {children}

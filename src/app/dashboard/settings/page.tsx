@@ -1,11 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useSettings } from '@/contexts/settings-context';
 import { useTheme } from '@/contexts/theme-context';
 import {
     Bot, FileText, Search, Palette, Sliders, Save, RotateCcw,
-    Moon, Sun, ChevronRight, Loader2, Sparkles, Database, Target
+    Moon, Sun, ChevronRight, Loader2, Sparkles, Database, Target,
+    Key, Eye, EyeOff, Trash2, CheckCircle, AlertCircle
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -16,36 +17,6 @@ const tabs = [
     { id: 'ui', label: 'UI/UX Preferences', icon: Palette },
 ];
 
-const providers = [
-    { value: 'groq', label: 'Groq', description: 'Fast inference with Llama models' },
-    { value: 'openai', label: 'OpenAI', description: 'GPT-4 and GPT-3.5 models' },
-    { value: 'anthropic', label: 'Anthropic', description: 'Claude models' },
-    { value: 'gemini', label: 'Google Gemini', description: 'Gemini Pro models' },
-];
-
-const modelOptions: Record<string, { value: string; label: string }[]> = {
-    groq: [
-        { value: 'llama-3.3-70b-versatile', label: 'Llama 3.3 70B Versatile' },
-        { value: 'llama-3.1-8b-instant', label: 'Llama 3.1 8B Instant' },
-        { value: 'mixtral-8x7b-32768', label: 'Mixtral 8x7B' },
-    ],
-    openai: [
-        { value: 'gpt-4-turbo', label: 'GPT-4 Turbo' },
-        { value: 'gpt-4', label: 'GPT-4' },
-        { value: 'gpt-3.5-turbo', label: 'GPT-3.5 Turbo' },
-    ],
-    anthropic: [
-        { value: 'claude-3-opus', label: 'Claude 3 Opus' },
-        { value: 'claude-3-sonnet', label: 'Claude 3 Sonnet' },
-        { value: 'claude-3-haiku', label: 'Claude 3 Haiku' },
-    ],
-    gemini: [
-        { value: 'gemini-1.5-pro', label: 'Gemini 1.5 Pro' },
-        { value: 'gemini-1.5-flash', label: 'Gemini 1.5 Flash' },
-        { value: 'gemini-pro', label: 'Gemini Pro' },
-    ],
-};
-
 const searchScopes = [
     { value: 'all', label: 'All Documents', description: 'Search across all uploaded documents' },
     { value: 'collection', label: 'Current Collection', description: 'Search within selected collection only' },
@@ -54,15 +25,58 @@ const searchScopes = [
 
 export default function SettingsPage() {
     const [activeTab, setActiveTab] = useState('llm');
-    const [isSaving, setIsSaving] = useState(false);
-    const { settings, updateLLMSettings, updateDocumentSettings, updateSearchSettings, updateUISettings, resetSettings } = useSettings();
+    const {
+        settings,
+        providers,
+        models,
+        isLoading,
+        isSaving,
+        updateLLMSettings,
+        updateDocumentSettings,
+        updateSearchSettings,
+        updateUISettings,
+        saveSettingsToServer,
+        deleteApiKeyFromServer,
+        resetSettings
+    } = useSettings();
     const { theme, setTheme } = useTheme();
 
+    // API key input states
+    const [openaiKey, setOpenaiKey] = useState('');
+    const [anthropicKey, setAnthropicKey] = useState('');
+    const [geminiKey, setGeminiKey] = useState('');
+    const [showOpenaiKey, setShowOpenaiKey] = useState(false);
+    const [showAnthropicKey, setShowAnthropicKey] = useState(false);
+    const [showGeminiKey, setShowGeminiKey] = useState(false);
+    const [deletingKey, setDeletingKey] = useState<string | null>(null);
+
     const handleSave = async () => {
-        setIsSaving(true);
-        await new Promise(resolve => setTimeout(resolve, 500));
-        toast.success('Settings saved successfully');
-        setIsSaving(false);
+        const apiKeys: { openai?: string; anthropic?: string; gemini?: string } = {};
+        if (openaiKey) apiKeys.openai = openaiKey;
+        if (anthropicKey) apiKeys.anthropic = anthropicKey;
+        if (geminiKey) apiKeys.gemini = geminiKey;
+
+        const success = await saveSettingsToServer(apiKeys);
+        if (success) {
+            toast.success('Settings saved successfully');
+            // Clear key inputs after save
+            setOpenaiKey('');
+            setAnthropicKey('');
+            setGeminiKey('');
+        } else {
+            toast.error('Failed to save settings');
+        }
+    };
+
+    const handleDeleteKey = async (provider: 'openai' | 'anthropic' | 'gemini') => {
+        setDeletingKey(provider);
+        const success = await deleteApiKeyFromServer(provider);
+        if (success) {
+            toast.success(`${provider.charAt(0).toUpperCase() + provider.slice(1)} API key deleted`);
+        } else {
+            toast.error('Failed to delete API key');
+        }
+        setDeletingKey(null);
     };
 
     const handleReset = () => {
@@ -78,6 +92,24 @@ export default function SettingsPage() {
             updateDocumentSettings({ allowedExtensions: [...current, ext] });
         }
     };
+
+    // Get current provider info
+    const currentProvider = providers.find(p => p.value === settings.llm.provider);
+    const currentModels = models[settings.llm.provider] || [];
+
+    // Check if current provider needs API key
+    const needsApiKey = currentProvider?.requires_key ?? false;
+    const hasApiKey = settings.llm.provider === 'openai' ? settings.llm.hasOpenaiKey :
+        settings.llm.provider === 'anthropic' ? settings.llm.hasAnthropicKey :
+            settings.llm.provider === 'gemini' ? settings.llm.hasGeminiKey : false;
+
+    if (isLoading) {
+        return (
+            <div className="h-full flex items-center justify-center">
+                <Loader2 className="w-8 h-8 text-primary-400 animate-spin" />
+            </div>
+        );
+    }
 
     return (
         <div className="h-full flex flex-col">
@@ -100,8 +132,8 @@ export default function SettingsPage() {
                                     key={tab.id}
                                     onClick={() => setActiveTab(tab.id)}
                                     className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${isActive
-                                            ? 'bg-primary-500/10 text-primary-400'
-                                            : 'text-dark-400 hover:text-white hover:bg-dark-800/50'
+                                        ? 'bg-primary-500/10 text-primary-400'
+                                        : 'text-dark-400 hover:text-white hover:bg-dark-800/50'
                                         }`}
                                 >
                                     <Icon className={`w-5 h-5 ${isActive ? 'text-primary-400' : 'text-dark-500'}`} />
@@ -130,7 +162,7 @@ export default function SettingsPage() {
                     </div>
                 </div>
 
-                <div className="flex-1 card">
+                <div className="flex-1 card overflow-y-auto">
                     {activeTab === 'llm' && (
                         <div className="space-y-6">
                             <div className="flex items-center gap-3 mb-6">
@@ -143,6 +175,7 @@ export default function SettingsPage() {
                                 </div>
                             </div>
 
+                            {/* Provider Selection */}
                             <div>
                                 <label className="label">LLM Provider</label>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -151,23 +184,126 @@ export default function SettingsPage() {
                                             key={provider.value}
                                             onClick={() => {
                                                 updateLLMSettings({ provider: provider.value as any });
-                                                const firstModel = modelOptions[provider.value]?.[0]?.value;
+                                                const firstModel = models[provider.value]?.[0]?.value;
                                                 if (firstModel) updateLLMSettings({ model: firstModel });
                                             }}
-                                            className={`p-4 rounded-xl border text-left transition-all ${settings.llm.provider === provider.value
-                                                    ? 'border-primary-500 bg-primary-500/10'
-                                                    : 'border-dark-700 hover:border-dark-600 bg-dark-800/50'
+                                            className={`p-4 rounded-xl border text-left transition-all relative ${settings.llm.provider === provider.value
+                                                ? 'border-primary-500 bg-primary-500/10'
+                                                : 'border-dark-700 hover:border-dark-600 bg-dark-800/50'
                                                 }`}
                                         >
-                                            <p className={`font-medium ${settings.llm.provider === provider.value ? 'text-primary-400' : 'text-white'}`}>
-                                                {provider.label}
-                                            </p>
+                                            <div className="flex items-center justify-between">
+                                                <p className={`font-medium ${settings.llm.provider === provider.value ? 'text-primary-400' : 'text-white'}`}>
+                                                    {provider.label}
+                                                </p>
+                                                {!provider.requires_key && (
+                                                    <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 text-xs font-medium">
+                                                        Free
+                                                    </span>
+                                                )}
+                                            </div>
                                             <p className="text-dark-400 text-sm mt-1">{provider.description}</p>
                                         </button>
                                     ))}
                                 </div>
                             </div>
 
+                            {/* API Key Input (for paid providers) */}
+                            {needsApiKey && (
+                                <div className="p-4 rounded-xl border border-dark-700 bg-dark-800/50 space-y-4">
+                                    <div className="flex items-center gap-3">
+                                        <Key className="w-5 h-5 text-amber-400" />
+                                        <div>
+                                            <p className="text-white font-medium">API Key Required</p>
+                                            <p className="text-dark-400 text-sm">Enter your {currentProvider?.label} API key</p>
+                                        </div>
+                                    </div>
+
+                                    {hasApiKey ? (
+                                        <div className="flex items-center justify-between p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30">
+                                            <div className="flex items-center gap-2">
+                                                <CheckCircle className="w-4 h-4 text-emerald-400" />
+                                                <span className="text-emerald-400 text-sm">API key configured</span>
+                                            </div>
+                                            <button
+                                                onClick={() => handleDeleteKey(settings.llm.provider as 'openai' | 'anthropic' | 'gemini')}
+                                                disabled={deletingKey === settings.llm.provider}
+                                                className="flex items-center gap-1 text-red-400 hover:text-red-300 text-sm"
+                                            >
+                                                {deletingKey === settings.llm.provider ? (
+                                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                                ) : (
+                                                    <Trash2 className="w-4 h-4" />
+                                                )}
+                                                Delete
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-2">
+                                            {settings.llm.provider === 'openai' && (
+                                                <div className="relative">
+                                                    <input
+                                                        type={showOpenaiKey ? 'text' : 'password'}
+                                                        value={openaiKey}
+                                                        onChange={(e) => setOpenaiKey(e.target.value)}
+                                                        placeholder="sk-..."
+                                                        className="input pr-10"
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setShowOpenaiKey(!showOpenaiKey)}
+                                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-dark-400 hover:text-white"
+                                                    >
+                                                        {showOpenaiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                                    </button>
+                                                </div>
+                                            )}
+                                            {settings.llm.provider === 'anthropic' && (
+                                                <div className="relative">
+                                                    <input
+                                                        type={showAnthropicKey ? 'text' : 'password'}
+                                                        value={anthropicKey}
+                                                        onChange={(e) => setAnthropicKey(e.target.value)}
+                                                        placeholder="sk-ant-..."
+                                                        className="input pr-10"
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setShowAnthropicKey(!showAnthropicKey)}
+                                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-dark-400 hover:text-white"
+                                                    >
+                                                        {showAnthropicKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                                    </button>
+                                                </div>
+                                            )}
+                                            {settings.llm.provider === 'gemini' && (
+                                                <div className="relative">
+                                                    <input
+                                                        type={showGeminiKey ? 'text' : 'password'}
+                                                        value={geminiKey}
+                                                        onChange={(e) => setGeminiKey(e.target.value)}
+                                                        placeholder="AIza..."
+                                                        className="input pr-10"
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setShowGeminiKey(!showGeminiKey)}
+                                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-dark-400 hover:text-white"
+                                                    >
+                                                        {showGeminiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                                    </button>
+                                                </div>
+                                            )}
+                                            <p className="text-dark-500 text-xs flex items-center gap-1">
+                                                <AlertCircle className="w-3 h-3" />
+                                                Your API key is stored securely and never shared
+                                            </p>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* Model Selection */}
                             <div>
                                 <label className="label">Model Selection</label>
                                 <select
@@ -175,7 +311,7 @@ export default function SettingsPage() {
                                     onChange={(e) => updateLLMSettings({ model: e.target.value })}
                                     className="input"
                                 >
-                                    {modelOptions[settings.llm.provider]?.map((model) => (
+                                    {currentModels.map((model) => (
                                         <option key={model.value} value={model.value}>
                                             {model.label}
                                         </option>
@@ -183,6 +319,7 @@ export default function SettingsPage() {
                                 </select>
                             </div>
 
+                            {/* Temperature */}
                             <div>
                                 <div className="flex items-center justify-between mb-2">
                                     <label className="label mb-0">Temperature</label>
@@ -203,6 +340,7 @@ export default function SettingsPage() {
                                 </div>
                             </div>
 
+                            {/* Max Tokens */}
                             <div>
                                 <label className="label">Max Tokens</label>
                                 <input
@@ -278,8 +416,8 @@ export default function SettingsPage() {
                                             key={ext}
                                             onClick={() => handleExtensionToggle(ext)}
                                             className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${settings.document.allowedExtensions.includes(ext)
-                                                    ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                                                    : 'bg-dark-800 text-dark-400 border border-dark-700 hover:border-dark-600'
+                                                ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                                                : 'bg-dark-800 text-dark-400 border border-dark-700 hover:border-dark-600'
                                                 }`}
                                         >
                                             .{ext}
@@ -343,8 +481,8 @@ export default function SettingsPage() {
                                             key={scope.value}
                                             onClick={() => updateSearchSettings({ searchScope: scope.value as any })}
                                             className={`w-full p-4 rounded-xl border text-left transition-all ${settings.search.searchScope === scope.value
-                                                    ? 'border-amber-500 bg-amber-500/10'
-                                                    : 'border-dark-700 hover:border-dark-600 bg-dark-800/50'
+                                                ? 'border-amber-500 bg-amber-500/10'
+                                                : 'border-dark-700 hover:border-dark-600 bg-dark-800/50'
                                                 }`}
                                         >
                                             <p className={`font-medium ${settings.search.searchScope === scope.value ? 'text-amber-400' : 'text-white'}`}>
@@ -379,8 +517,8 @@ export default function SettingsPage() {
                                             updateUISettings({ theme: 'dark' });
                                         }}
                                         className={`p-6 rounded-xl border transition-all ${theme === 'dark'
-                                                ? 'border-violet-500 bg-violet-500/10'
-                                                : 'border-dark-700 hover:border-dark-600 bg-dark-800/50'
+                                            ? 'border-violet-500 bg-violet-500/10'
+                                            : 'border-dark-700 hover:border-dark-600 bg-dark-800/50'
                                             }`}
                                     >
                                         <div className="w-12 h-12 rounded-full bg-dark-900 border border-dark-600 flex items-center justify-center mx-auto mb-3">
@@ -397,8 +535,8 @@ export default function SettingsPage() {
                                             updateUISettings({ theme: 'light' });
                                         }}
                                         className={`p-6 rounded-xl border transition-all ${theme === 'light'
-                                                ? 'border-violet-500 bg-violet-500/10'
-                                                : 'border-dark-700 hover:border-dark-600 bg-dark-800/50'
+                                            ? 'border-violet-500 bg-violet-500/10'
+                                            : 'border-dark-700 hover:border-dark-600 bg-dark-800/50'
                                             }`}
                                     >
                                         <div className="w-12 h-12 rounded-full bg-gray-100 border border-gray-300 flex items-center justify-center mx-auto mb-3">
@@ -410,6 +548,7 @@ export default function SettingsPage() {
                                         <p className="text-dark-400 text-sm text-center mt-1">Clean and bright</p>
                                     </button>
                                 </div>
+                                <p className="text-dark-500 text-xs mt-2 text-center">Theme switching coming soon</p>
                             </div>
                         </div>
                     )}
