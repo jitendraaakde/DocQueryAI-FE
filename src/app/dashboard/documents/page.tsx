@@ -12,6 +12,8 @@ import {
     Link as LinkIcon, ChevronDown, Folders, Eye
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { UrlUploadModal } from '@/components/documents/UrlUploadModal';
+import { GoogleDrivePickerModal } from '@/components/documents/GoogleDrivePickerModal';
 
 // Wrap with Suspense because useSearchParams needs it in Next.js App Router
 export default function DocumentsPage() {
@@ -54,6 +56,10 @@ function DocumentsContent() {
 
     // Delete loading state
     const [deletingId, setDeletingId] = useState<number | null>(null);
+
+    // Modal states
+    const [showUrlModal, setShowUrlModal] = useState(false);
+    const [showDriveModal, setShowDriveModal] = useState(false);
 
     // Load collections on mount
     useEffect(() => {
@@ -142,14 +148,11 @@ function DocumentsContent() {
     });
 
     const handleGoogleDrive = () => {
-        toast('Google Drive integration coming soon!', { icon: '🔜' });
+        setShowDriveModal(true);
     };
 
     const handleUrlImport = () => {
-        const url = prompt('Enter URL to import:');
-        if (url) {
-            toast('URL import coming soon!', { icon: '🔜' });
-        }
+        setShowUrlModal(true);
     };
 
     const handleDelete = async (docId: number, filename: string) => {
@@ -369,7 +372,6 @@ function DocumentsContent() {
                                 <div className="text-left min-w-0 flex-1 overflow-hidden">
                                     <p className="font-semibold text-sm flex items-center gap-2 flex-wrap">
                                         <span className="whitespace-nowrap">Upload from Drive</span>
-                                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-dark-500/50 text-dark-400">Soon</span>
                                     </p>
                                     <p className="text-[11px] text-dark-400 truncate">Connect your Google Drive</p>
                                 </div>
@@ -387,7 +389,6 @@ function DocumentsContent() {
                                 <div className="text-left min-w-0 flex-1 overflow-hidden">
                                     <p className="font-semibold text-sm flex items-center gap-2 flex-wrap">
                                         <span className="whitespace-nowrap">Upload from URL</span>
-                                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-dark-500/50 text-dark-400">Soon</span>
                                     </p>
                                     <p className="text-[11px] text-dark-400 truncate">Import from web link</p>
                                 </div>
@@ -587,6 +588,22 @@ function DocumentsContent() {
                     </div>
                 </div>
             )}
+
+            {/* URL Upload Modal */}
+            <UrlUploadModal
+                isOpen={showUrlModal}
+                onClose={() => setShowUrlModal(false)}
+                onSuccess={fetchDocuments}
+                selectedCollectionId={selectedCollectionId}
+            />
+
+            {/* Google Drive Picker Modal */}
+            <GoogleDrivePickerModal
+                isOpen={showDriveModal}
+                onClose={() => setShowDriveModal(false)}
+                onSuccess={fetchDocuments}
+                selectedCollectionId={selectedCollectionId}
+            />
         </div>
     );
 }
