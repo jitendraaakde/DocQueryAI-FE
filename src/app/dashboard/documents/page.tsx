@@ -9,11 +9,14 @@ import { getCollections, updateCollectionDocuments, Collection } from '@/lib/col
 import {
     Upload, FileText, Trash2, RefreshCw, Search,
     Loader2, X, CheckCircle, AlertCircle, Clock,
-    Link as LinkIcon, ChevronDown, Folders, Eye
+    Link as LinkIcon, ChevronDown, Folders, Eye, Youtube, Globe
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { UrlUploadModal } from '@/components/documents/UrlUploadModal';
-import { GoogleDrivePickerModal } from '@/components/documents/GoogleDrivePickerModal';
+import { TextInputModal } from '@/components/documents/TextInputModal';
+import { YoutubeUploadModal } from '@/components/documents/YoutubeUploadModal';
+import { WebsiteCrawlModal } from '@/components/documents/WebsiteCrawlModal';
+// import { GoogleDrivePickerModal } from '@/components/documents/GoogleDrivePickerModal';
 
 // Wrap with Suspense because useSearchParams needs it in Next.js App Router
 export default function DocumentsPage() {
@@ -59,7 +62,10 @@ function DocumentsContent() {
 
     // Modal states
     const [showUrlModal, setShowUrlModal] = useState(false);
-    const [showDriveModal, setShowDriveModal] = useState(false);
+    const [showTextModal, setShowTextModal] = useState(false);
+    const [showYoutubeModal, setShowYoutubeModal] = useState(false);
+    const [showWebsiteModal, setShowWebsiteModal] = useState(false);
+    // const [showDriveModal, setShowDriveModal] = useState(false);
 
     // Load collections on mount
     useEffect(() => {
@@ -147,9 +153,9 @@ function DocumentsContent() {
         noKeyboard: true
     });
 
-    const handleGoogleDrive = () => {
+    /* const handleGoogleDrive = () => {
         setShowDriveModal(true);
-    };
+    }; */
 
     const handleUrlImport = () => {
         setShowUrlModal(true);
@@ -312,95 +318,144 @@ function DocumentsContent() {
                 </div>
             </div>
 
-            {/* Upload Zone with 3 Options */}
+            {/* Upload Zone */}
             <div
                 {...getRootProps()}
                 className={`
-                    rounded-2xl border-2 border-dashed transition-all duration-300 p-8
+                    relative overflow-hidden rounded-2xl border transition-all duration-300
                     ${isDragActive
-                        ? 'border-primary-500 bg-primary-500/10'
-                        : 'border-dark-700 hover:border-dark-600 bg-dark-800/30'}
-                    ${isUploading ? 'opacity-50 cursor-not-allowed' : ''}
+                        ? 'border-primary-500 bg-primary-500/5'
+                        : 'border-dark-700 bg-dark-800/50 hover:border-dark-600'}
+                    ${isUploading ? 'opacity-60 cursor-not-allowed' : ''}
                 `}
             >
+                {/* Subtle glow */}
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-96 h-32 bg-primary-500/5 blur-3xl rounded-full pointer-events-none" />
+
                 <input {...getInputProps()} />
 
-                {isUploading ? (
-                    <div className="text-center">
-                        <Loader2 className="w-10 h-10 text-primary-400 mx-auto mb-3 animate-spin" />
-                        <p className="text-white font-medium">{uploadProgress}</p>
-                    </div>
-                ) : isDragActive ? (
-                    <div className="text-center">
-                        <Upload className="w-10 h-10 mx-auto mb-3 text-primary-400 animate-bounce" />
-                        <p className="text-white font-medium">Drop files here...</p>
-                    </div>
-                ) : (
-                    <div className="flex flex-col items-center gap-4">
-                        {/* Upload Options - 3 Stacked Buttons */}
-                        <div className="flex flex-col sm:flex-row gap-3 w-full max-w-2xl">
-                            {/* Upload from Computer */}
-                            <button
-                                type="button"
-                                onClick={(e) => { e.stopPropagation(); open(); }}
-                                className="flex-1 flex items-center gap-3 px-4 py-3 rounded-xl bg-gradient-to-r from-primary-600 to-primary-500 text-white font-medium hover:shadow-lg hover:shadow-primary-500/30 transition-all hover:scale-[1.02] group"
-                            >
-                                <div className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center group-hover:scale-110 transition-transform flex-shrink-0">
-                                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                        <rect x="2" y="3" width="20" height="14" rx="2" />
-                                        <line x1="8" y1="21" x2="16" y2="21" />
-                                        <line x1="12" y1="17" x2="12" y2="21" />
-                                    </svg>
-                                </div>
-                                <div className="text-left min-w-0">
-                                    <p className="font-semibold text-sm">Upload from Computer</p>
-                                    <p className="text-[11px] text-white/70 truncate">PDF, TXT, DOCX, MD • Max 50MB</p>
-                                </div>
-                            </button>
-
-                            {/* Upload from Google Drive */}
-                            <button
-                                type="button"
-                                onClick={(e) => { e.stopPropagation(); handleGoogleDrive(); }}
-                                className="flex-1 flex items-center gap-3 px-4 py-3 rounded-xl bg-dark-700/80 border border-dark-600 text-dark-200 hover:text-white hover:bg-dark-700 hover:border-dark-500 transition-all group min-w-0"
-                            >
-                                <div className="w-9 h-9 rounded-full bg-dark-600 flex items-center justify-center group-hover:scale-110 transition-transform flex-shrink-0">
-                                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-                                        <path d="M7.71 3.5L1.15 15l3.43 5.93h13.14l3.43-5.93L14.59 3.5H7.71zM14 14.5H6.5l3.75-6.5H14l3.75 6.5H14z" />
-                                    </svg>
-                                </div>
-                                <div className="text-left min-w-0 flex-1 overflow-hidden">
-                                    <p className="font-semibold text-sm flex items-center gap-2 flex-wrap">
-                                        <span className="whitespace-nowrap">Upload from Drive</span>
-                                    </p>
-                                    <p className="text-[11px] text-dark-400 truncate">Connect your Google Drive</p>
-                                </div>
-                            </button>
-
-                            {/* Upload from URL */}
-                            <button
-                                type="button"
-                                onClick={(e) => { e.stopPropagation(); handleUrlImport(); }}
-                                className="flex-1 flex items-center gap-3 px-4 py-3 rounded-xl bg-dark-700/80 border border-dark-600 text-dark-200 hover:text-white hover:bg-dark-700 hover:border-dark-500 transition-all group min-w-0"
-                            >
-                                <div className="w-9 h-9 rounded-full bg-dark-600 flex items-center justify-center group-hover:scale-110 transition-transform flex-shrink-0">
-                                    <LinkIcon className="w-4 h-4" />
-                                </div>
-                                <div className="text-left min-w-0 flex-1 overflow-hidden">
-                                    <p className="font-semibold text-sm flex items-center gap-2 flex-wrap">
-                                        <span className="whitespace-nowrap">Upload from URL</span>
-                                    </p>
-                                    <p className="text-[11px] text-dark-400 truncate">Import from web link</p>
-                                </div>
-                            </button>
+                <div className="relative p-8">
+                    {isUploading ? (
+                        <div className="text-center py-6">
+                            <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-primary-500/10 flex items-center justify-center">
+                                <Loader2 className="w-8 h-8 text-primary-400 animate-spin" />
+                            </div>
+                            <p className="text-white font-medium">{uploadProgress}</p>
+                            <p className="text-dark-400 text-sm mt-1">Please wait...</p>
                         </div>
+                    ) : isDragActive ? (
+                        <div className="text-center py-8">
+                            <div className="w-20 h-20 mx-auto mb-4 rounded-2xl bg-primary-500/20 border-2 border-dashed border-primary-500 flex items-center justify-center">
+                                <Upload className="w-10 h-10 text-primary-400 animate-bounce" />
+                            </div>
+                            <p className="text-white font-semibold text-xl">Drop files here</p>
+                            <p className="text-dark-400 text-sm mt-1">Release to upload</p>
+                        </div>
+                    ) : (
+                        <div className="space-y-6">
+                            {/* Main Upload Button */}
+                            <div className="flex flex-col items-center">
+                                <button
+                                    type="button"
+                                    onClick={(e) => { e.stopPropagation(); open(); }}
+                                    className="group flex items-center gap-4 px-8 py-4 rounded-xl bg-primary-600 hover:bg-primary-500 text-white font-medium transition-all duration-200 shadow-lg shadow-primary-500/20 hover:shadow-primary-500/30 hover:scale-[1.02]"
+                                >
+                                    <div className="w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center group-hover:scale-105 transition-transform">
+                                        <Upload className="w-5 h-5" />
+                                    </div>
+                                    <div className="text-left">
+                                        <span className="block font-semibold">Upload from Computer</span>
+                                        <span className="text-sm text-white/70">PDF, TXT, DOCX, MD • Max 50MB</span>
+                                    </div>
+                                </button>
+                            </div>
 
-                        {/* Drag & drop hint */}
-                        <p className="text-dark-500 text-sm mt-4">
-                            or drag & drop files anywhere in this area
-                        </p>
-                    </div>
-                )}
+                            {/* Divider */}
+                            <div className="flex items-center gap-4 px-4">
+                                <div className="flex-1 h-px bg-dark-700" />
+                                <span className="text-dark-500 text-xs uppercase tracking-wider font-medium">or import from</span>
+                                <div className="flex-1 h-px bg-dark-700" />
+                            </div>
+
+                            {/* Import Options */}
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                {/* URL */}
+                                <button
+                                    type="button"
+                                    onClick={(e) => { e.stopPropagation(); handleUrlImport(); }}
+                                    className="group p-4 rounded-xl bg-dark-800 border border-dark-700 hover:border-primary-500/50 hover:bg-dark-750 transition-all duration-200"
+                                >
+                                    <div className="flex flex-col items-center gap-2.5">
+                                        <div className="w-10 h-10 rounded-lg bg-primary-500/10 flex items-center justify-center group-hover:bg-primary-500/20 group-hover:scale-105 transition-all">
+                                            <LinkIcon className="w-5 h-5 text-primary-400" />
+                                        </div>
+                                        <div className="text-center">
+                                            <p className="text-white font-medium text-sm">URL</p>
+                                            <p className="text-dark-500 text-xs">Web link</p>
+                                        </div>
+                                    </div>
+                                </button>
+
+                                {/* Paste Text */}
+                                <button
+                                    type="button"
+                                    onClick={(e) => { e.stopPropagation(); setShowTextModal(true); }}
+                                    className="group p-4 rounded-xl bg-dark-800 border border-dark-700 hover:border-primary-500/50 hover:bg-dark-750 transition-all duration-200"
+                                >
+                                    <div className="flex flex-col items-center gap-2.5">
+                                        <div className="w-10 h-10 rounded-lg bg-primary-500/10 flex items-center justify-center group-hover:bg-primary-500/20 group-hover:scale-105 transition-all">
+                                            <FileText className="w-5 h-5 text-primary-400" />
+                                        </div>
+                                        <div className="text-center">
+                                            <p className="text-white font-medium text-sm">Paste</p>
+                                            <p className="text-dark-500 text-xs">Direct text</p>
+                                        </div>
+                                    </div>
+                                </button>
+
+                                {/* YouTube */}
+                                <button
+                                    type="button"
+                                    onClick={(e) => { e.stopPropagation(); setShowYoutubeModal(true); }}
+                                    className="group p-4 rounded-xl bg-dark-800 border border-dark-700 hover:border-red-500/50 hover:bg-dark-750 transition-all duration-200"
+                                >
+                                    <div className="flex flex-col items-center gap-2.5">
+                                        <div className="w-10 h-10 rounded-lg bg-red-500/10 flex items-center justify-center group-hover:bg-red-500/20 group-hover:scale-105 transition-all">
+                                            <Youtube className="w-5 h-5 text-red-400" />
+                                        </div>
+                                        <div className="text-center">
+                                            <p className="text-white font-medium text-sm">YouTube</p>
+                                            <p className="text-dark-500 text-xs">Transcript</p>
+                                        </div>
+                                    </div>
+                                </button>
+
+                                {/* Website */}
+                                <button
+                                    type="button"
+                                    onClick={(e) => { e.stopPropagation(); setShowWebsiteModal(true); }}
+                                    className="group p-4 rounded-xl bg-dark-800 border border-dark-700 hover:border-primary-500/50 hover:bg-dark-750 transition-all duration-200"
+                                >
+                                    <div className="flex flex-col items-center gap-2.5">
+                                        <div className="w-10 h-10 rounded-lg bg-primary-500/10 flex items-center justify-center group-hover:bg-primary-500/20 group-hover:scale-105 transition-all">
+                                            <Globe className="w-5 h-5 text-primary-400" />
+                                        </div>
+                                        <div className="text-center">
+                                            <p className="text-white font-medium text-sm">Website</p>
+                                            <p className="text-dark-500 text-xs">Scrape page</p>
+                                        </div>
+                                    </div>
+                                </button>
+                            </div>
+
+                            {/* Drag & Drop Hint */}
+                            <p className="text-center text-dark-500 text-sm flex items-center justify-center gap-2">
+                                <Upload className="w-4 h-4" />
+                                or drag & drop files here
+                            </p>
+                        </div>
+                    )}
+                </div>
             </div>
 
             {/* Search */}
@@ -597,13 +652,37 @@ function DocumentsContent() {
                 selectedCollectionId={selectedCollectionId}
             />
 
+            {/* Text Input Modal */}
+            <TextInputModal
+                isOpen={showTextModal}
+                onClose={() => setShowTextModal(false)}
+                onSuccess={fetchDocuments}
+                selectedCollectionId={selectedCollectionId}
+            />
+
+            {/* YouTube Upload Modal */}
+            <YoutubeUploadModal
+                isOpen={showYoutubeModal}
+                onClose={() => setShowYoutubeModal(false)}
+                onSuccess={fetchDocuments}
+                selectedCollectionId={selectedCollectionId}
+            />
+
+            {/* Website Crawl Modal */}
+            <WebsiteCrawlModal
+                isOpen={showWebsiteModal}
+                onClose={() => setShowWebsiteModal(false)}
+                onSuccess={fetchDocuments}
+                selectedCollectionId={selectedCollectionId}
+            />
+
             {/* Google Drive Picker Modal */}
-            <GoogleDrivePickerModal
+            {/* <GoogleDrivePickerModal
                 isOpen={showDriveModal}
                 onClose={() => setShowDriveModal(false)}
                 onSuccess={fetchDocuments}
                 selectedCollectionId={selectedCollectionId}
-            />
+            /> */}
         </div>
     );
 }
