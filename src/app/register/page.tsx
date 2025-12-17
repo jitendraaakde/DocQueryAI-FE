@@ -129,8 +129,8 @@ export default function RegisterPage() {
                 </div>
 
                 {/* Left Side - Branding (Desktop) */}
-                <div className="hidden lg:flex flex-1 items-center justify-center p-12 relative z-10">
-                    <div className="max-w-lg">
+                <div className="hidden lg:flex flex-1 items-center justify-center pl-16 pr-8 py-12 relative z-10">
+                    <div className="max-w-lg ml-8">
                         <Link href="/" className="inline-flex items-center mb-8">
                             <div className="h-14 rounded-2xl overflow-hidden shadow-lg shadow-primary-500/30">
                                 <Image

@@ -23,8 +23,8 @@ export default function RootLayout({
         <html lang="en" className="dark" suppressHydrationWarning>
             <body className={inter.className}>
                 <ThemeProvider>
-                    <SettingsProvider>
-                        <AuthProvider>
+                    <AuthProvider>
+                        <SettingsProvider>
                             {children}
                             <Toaster
                                 position="top-right"
@@ -52,8 +52,8 @@ export default function RootLayout({
                                     },
                                 }}
                             />
-                        </AuthProvider>
-                    </SettingsProvider>
+                        </SettingsProvider>
+                    </AuthProvider>
                 </ThemeProvider>
             </body>
         </html>

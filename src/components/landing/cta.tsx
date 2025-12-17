@@ -8,7 +8,7 @@ import { BackgroundBeams } from '@/components/ui/background-beams';
 
 export function CTA() {
     return (
-        <section className="py-24 px-6 relative overflow-hidden">
+        <section className="py-24 px-8 md:px-12 lg:px-16 relative overflow-hidden">
             {/* Decorative Elements */}
             <div className="absolute inset-0 bg-dark-950" />
             <div className="absolute inset-0 bg-gradient-to-r from-primary-900/20 via-dark-950 to-accent/20" />

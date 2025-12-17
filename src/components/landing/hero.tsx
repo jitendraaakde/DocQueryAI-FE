@@ -20,7 +20,7 @@ const Hero = memo(function Hero() {
             <BackgroundBeams />
             <div className="absolute inset-0 bg-gradient-to-b from-dark-950 via-dark-950/95 to-dark-900 pointer-events-none" />
 
-            <div className="relative z-10 max-w-7xl mx-auto px-6 pt-16 pb-24">
+            <div className="relative z-10 max-w-7xl mx-auto px-8 md:px-12 lg:px-16 pt-16 pb-24">
                 <div className="text-center">
                     {/* Badge */}
                     <div

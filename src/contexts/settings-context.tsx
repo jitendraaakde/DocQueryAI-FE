@@ -1,7 +1,8 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { getSettings, updateSettings, deleteApiKey, SettingsWithModels, LLMProvider, LLMModel } from '@/lib/settings-api';
+import { useAuth } from '@/contexts/AuthContext';
 
 export interface LLMSettings {
   provider: 'groq' | 'openai' | 'anthropic' | 'gemini';
@@ -80,15 +81,18 @@ const SettingsContext = createContext<SettingsContextType | undefined>(undefined
 const SETTINGS_KEY = 'docquery-settings';
 
 export function SettingsProvider({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
   const [settings, setSettings] = useState<AppSettings>(defaultSettings);
   const [providers, setProviders] = useState<LLMProvider[]>([]);
   const [models, setModels] = useState<Record<string, LLMModel[]>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const hasFetchedRef = useRef(false);
 
   // Fetch settings from server
   const refreshSettings = useCallback(async () => {
+    setIsLoading(true);
     try {
       const data = await getSettings();
 
@@ -111,6 +115,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
           },
         }));
       }
+      hasFetchedRef.current = true;
     } catch (error) {
       console.error('Failed to fetch settings:', error);
       // Fall back to localStorage
@@ -128,10 +133,21 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  // Initial mount
   useEffect(() => {
-    refreshSettings();
     setMounted(true);
-  }, [refreshSettings]);
+  }, []);
+
+  // Fetch settings when authentication state becomes ready and user is authenticated
+  useEffect(() => {
+    if (!authLoading && isAuthenticated && !hasFetchedRef.current) {
+      refreshSettings();
+    } else if (!authLoading && !isAuthenticated) {
+      // User not authenticated, just use defaults
+      setIsLoading(false);
+      hasFetchedRef.current = false; // Reset so we fetch on next login
+    }
+  }, [authLoading, isAuthenticated, refreshSettings]);
 
   // Save to localStorage as backup
   useEffect(() => {

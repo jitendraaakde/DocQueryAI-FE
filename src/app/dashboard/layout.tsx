@@ -9,7 +9,7 @@ import { ProfileModal } from '@/components/ProfileModal';
 import {
     FileText, MessageSquare, FolderOpen, Settings, LogOut,
     Menu, X, ChevronRight, Home, Loader2, BarChart3, Folders,
-    ChevronDown, Moon, Sun, Bell, History, User
+    ChevronDown, Bell, History, User
 } from 'lucide-react';
 
 const navigation = [
@@ -65,7 +65,6 @@ export default function DashboardLayout({
     const [profileOpen, setProfileOpen] = useState(false);
     const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
     const [showProfileModal, setShowProfileModal] = useState(false);
-    const [isDark, setIsDark] = useState(true);
     const profileRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -89,15 +88,6 @@ export default function DashboardLayout({
     const toggleProfile = useCallback(() => setProfileOpen(prev => !prev), []);
     const closeProfile = useCallback(() => setProfileOpen(false), []);
     const closeLogoutConfirm = useCallback(() => setShowLogoutConfirm(false), []);
-
-    const toggleTheme = useCallback(() => {
-        setIsDark(prev => {
-            const newValue = !prev;
-            document.documentElement.classList.toggle('dark', newValue);
-            document.documentElement.classList.toggle('light', !newValue);
-            return newValue;
-        });
-    }, []);
 
     const handleLogout = useCallback(() => {
         setShowLogoutConfirm(false);
@@ -235,15 +225,6 @@ export default function DashboardLayout({
 
                         {/* Right: Actions + Profile */}
                         <div className="flex items-center gap-2">
-
-                            {/* Theme Toggle */}
-                            <button
-                                onClick={toggleTheme}
-                                className="p-2 rounded-lg text-dark-400 hover:text-white hover:bg-dark-800 transition-colors"
-                            >
-                                {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-                            </button>
-
                             {/* Profile Dropdown */}
                             <div className="relative" ref={profileRef}>
                                 <button

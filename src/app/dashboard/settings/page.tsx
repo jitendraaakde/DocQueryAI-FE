@@ -2,10 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { useSettings } from '@/contexts/settings-context';
-import { useTheme } from '@/contexts/theme-context';
 import {
-    Bot, FileText, Search, Palette, Sliders, Save, RotateCcw,
-    Moon, Sun, ChevronRight, Loader2, Sparkles, Database, Target,
+    Bot, FileText, Search, Sliders, Save, RotateCcw,
+    ChevronRight, Loader2, Sparkles, Database, Target,
     Key, Eye, EyeOff, Trash2, CheckCircle, AlertCircle
 } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -14,7 +13,6 @@ const tabs = [
     { id: 'llm', label: 'LLM & AI', icon: Bot },
     { id: 'document', label: 'Document Processing', icon: FileText },
     { id: 'search', label: 'Search & Retrieval', icon: Search },
-    { id: 'ui', label: 'UI/UX Preferences', icon: Palette },
 ];
 
 const searchScopes = [
@@ -39,7 +37,6 @@ export default function SettingsPage() {
         deleteApiKeyFromServer,
         resetSettings
     } = useSettings();
-    const { theme, setTheme } = useTheme();
 
     // API key input states
     const [openaiKey, setOpenaiKey] = useState('');
@@ -492,63 +489,6 @@ export default function SettingsPage() {
                                         </button>
                                     ))}
                                 </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {activeTab === 'ui' && (
-                        <div className="space-y-6">
-                            <div className="flex items-center gap-3 mb-6">
-                                <div className="w-10 h-10 rounded-xl bg-violet-500/10 flex items-center justify-center">
-                                    <Palette className="w-5 h-5 text-violet-400" />
-                                </div>
-                                <div>
-                                    <h2 className="text-xl font-semibold text-white">UI/UX Preferences</h2>
-                                    <p className="text-dark-400 text-sm">Customize your visual experience</p>
-                                </div>
-                            </div>
-
-                            <div>
-                                <label className="label">Theme</label>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <button
-                                        onClick={() => {
-                                            setTheme('dark');
-                                            updateUISettings({ theme: 'dark' });
-                                        }}
-                                        className={`p-6 rounded-xl border transition-all ${theme === 'dark'
-                                            ? 'border-violet-500 bg-violet-500/10'
-                                            : 'border-dark-700 hover:border-dark-600 bg-dark-800/50'
-                                            }`}
-                                    >
-                                        <div className="w-12 h-12 rounded-full bg-dark-900 border border-dark-600 flex items-center justify-center mx-auto mb-3">
-                                            <Moon className={`w-6 h-6 ${theme === 'dark' ? 'text-violet-400' : 'text-dark-400'}`} />
-                                        </div>
-                                        <p className={`font-medium text-center ${theme === 'dark' ? 'text-violet-400' : 'text-white'}`}>
-                                            Dark Mode
-                                        </p>
-                                        <p className="text-dark-400 text-sm text-center mt-1">Easier on the eyes</p>
-                                    </button>
-                                    <button
-                                        onClick={() => {
-                                            setTheme('light');
-                                            updateUISettings({ theme: 'light' });
-                                        }}
-                                        className={`p-6 rounded-xl border transition-all ${theme === 'light'
-                                            ? 'border-violet-500 bg-violet-500/10'
-                                            : 'border-dark-700 hover:border-dark-600 bg-dark-800/50'
-                                            }`}
-                                    >
-                                        <div className="w-12 h-12 rounded-full bg-gray-100 border border-gray-300 flex items-center justify-center mx-auto mb-3">
-                                            <Sun className={`w-6 h-6 ${theme === 'light' ? 'text-amber-500' : 'text-dark-400'}`} />
-                                        </div>
-                                        <p className={`font-medium text-center ${theme === 'light' ? 'text-violet-400' : 'text-white'}`}>
-                                            Light Mode
-                                        </p>
-                                        <p className="text-dark-400 text-sm text-center mt-1">Clean and bright</p>
-                                    </button>
-                                </div>
-                                <p className="text-dark-500 text-xs mt-2 text-center">Theme switching coming soon</p>
                             </div>
                         </div>
                     )}

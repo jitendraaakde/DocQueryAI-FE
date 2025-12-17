@@ -58,7 +58,7 @@ const Navbar = memo(function Navbar() {
                 )}
                 style={{ transform: 'translateY(0)' }}
             >
-                <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+                <div className="max-w-7xl mx-auto px-8 md:px-12 lg:px-16 py-4 flex items-center justify-between">
                     {/* Logo */}
                     <Link href="/" className="flex items-center group">
                         <div className="h-12 transition-transform hover:scale-105 active:scale-95">

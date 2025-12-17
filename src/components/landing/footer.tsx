@@ -30,7 +30,7 @@ const socialLinks = [
 
 const Footer = memo(function Footer() {
     return (
-        <footer className="relative py-16 px-6 border-t border-dark-800/50">
+        <footer className="relative py-16 px-8 md:px-12 lg:px-16 border-t border-dark-800/50">
             <div className="absolute inset-0 bg-dark-950" />
 
             <div className="relative z-10 max-w-7xl mx-auto">
