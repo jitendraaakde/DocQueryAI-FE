@@ -2,8 +2,10 @@
 
 import { useState, useRef, useEffect, useCallback, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
+import Image from 'next/image';
 import api, { getErrorMessage } from '@/lib/api';
 import { QueryResponse, Document } from '@/types';
+import { useAuth } from '@/contexts/AuthContext';
 import {
     Send, Loader2, FileText,
     Sparkles, ThumbsUp, ThumbsDown,
@@ -20,6 +22,7 @@ import {
     submitMessageFeedback,
     ChatSession,
 } from '@/lib/chat-api';
+import { DocumentSummaryModal } from '@/components/documents/DocumentSummaryModal';
 
 interface ChatMessage {
     id: string;
@@ -48,6 +51,7 @@ export default function ChatPage() {
 
 function ChatContent() {
     const searchParams = useSearchParams();
+    const { user } = useAuth();
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -57,11 +61,24 @@ function ChatContent() {
     const [currentSession, setCurrentSession] = useState<ChatSession | null>(null);
     const [docSearchQuery, setDocSearchQuery] = useState('');
     const [showScrollButton, setShowScrollButton] = useState(false);
+    const [suggestedQuestions, setSuggestedQuestions] = useState<string[]>([]);
+    const [suggestionIndex, setSuggestionIndex] = useState(0);
+    const [summaryDoc, setSummaryDoc] = useState<{ id: number; name: string } | null>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const messagesContainerRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLTextAreaElement>(null);
     const streamingRef = useRef<NodeJS.Timeout | null>(null);
     const userScrolledRef = useRef(false);
+
+    // Auto-cycle through suggested questions
+    useEffect(() => {
+        if (suggestedQuestions.length > 0) {
+            const timer = setInterval(() => {
+                setSuggestionIndex(prev => (prev + 1) % suggestedQuestions.length);
+            }, 4000);
+            return () => clearInterval(timer);
+        }
+    }, [suggestedQuestions]);
 
     // Load session from URL query parameter
     useEffect(() => {
@@ -228,6 +245,9 @@ function ChatContent() {
             );
             setCurrentSession(response.session);
 
+            // Set suggested questions from AI
+            setSuggestedQuestions(response.suggested_questions || []);
+
             streamText(assistantMessage.id, response.message.content);
         } catch (error) {
             toast.error(getErrorMessage(error));
@@ -301,7 +321,7 @@ function ChatContent() {
 
                                 {/* Title with Gradient Animation */}
                                 <h2 className="text-2xl font-bold chat-gradient-title mb-3">
-                                    How can I help you today?
+                                    How can I help you{user?.full_name ? `, ${user.full_name.split(' ')[0]}` : user?.username ? `, ${user.username}` : ''}?
                                 </h2>
                                 <p className="text-dark-400 max-w-md mb-8 text-sm leading-relaxed">
                                     Ask questions about your documents. I'll analyze them and provide intelligent answers with source citations.
@@ -353,18 +373,25 @@ function ChatContent() {
                             messages.map((message) => (
                                 <div key={message.id} className={`flex gap-3 ${message.role === 'user' ? 'flex-row-reverse' : ''}`}>
                                     {/* Avatar */}
-                                    <div className={`
-                                        w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg
-                                        ${message.role === 'assistant'
-                                            ? 'bg-gradient-to-br from-primary-500 via-primary-600 to-accent'
-                                            : 'bg-gradient-to-br from-dark-600 to-dark-700 border border-dark-500/50'}
-                                    `}>
-                                        {message.role === 'assistant' ? (
+                                    {message.role === 'assistant' ? (
+                                        <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg bg-gradient-to-br from-primary-500 via-primary-600 to-accent">
                                             <Bot className="w-5 h-5 text-white" />
-                                        ) : (
+                                        </div>
+                                    ) : user?.avatar_url ? (
+                                        <div className="w-9 h-9 rounded-xl flex-shrink-0 shadow-lg overflow-hidden border border-dark-500/50">
+                                            <Image
+                                                src={user.avatar_url}
+                                                alt={user.full_name || user.username}
+                                                width={36}
+                                                height={36}
+                                                className="w-full h-full object-cover"
+                                            />
+                                        </div>
+                                    ) : (
+                                        <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg bg-gradient-to-br from-dark-600 to-dark-700 border border-dark-500/50">
                                             <User className="w-5 h-5 text-dark-200" />
-                                        )}
-                                    </div>
+                                        </div>
+                                    )}
 
                                     {/* Message Content */}
                                     <div className={`flex-1 max-w-[85%] ${message.role === 'user' ? 'text-right' : ''}`}>
@@ -477,6 +504,40 @@ function ChatContent() {
                 {/* Enhanced Input Area */}
                 <div className="border-t border-dark-800 bg-gradient-to-t from-dark-900 to-dark-900/50">
                     <div className="max-w-3xl mx-auto p-4">
+                        {/* Suggested Questions - Infinite Sliding Chips */}
+                        {suggestedQuestions.length > 0 && !isLoading && (() => {
+                            const cleanQuestions = suggestedQuestions.slice(0, 3).map(q =>
+                                q.replace(/\*\*/g, '').replace(/\*/g, '').replace(/_/g, '').trim()
+                            );
+                            // Duplicate for seamless loop
+                            const duplicatedQuestions = [...cleanQuestions, ...cleanQuestions];
+
+                            return (
+                                <div className="mb-3 overflow-hidden">
+                                    <div className="chip-carousel-container">
+                                        <div className="chip-carousel flex gap-3 animate-slide-chips">
+                                            {duplicatedQuestions.map((question, i) => (
+                                                <button
+                                                    type="button"
+                                                    key={i}
+                                                    onClick={() => {
+                                                        setInput(question);
+                                                        setSuggestedQuestions([]);
+                                                        inputRef.current?.focus();
+                                                    }}
+                                                    className="chip-item group flex items-center gap-2 px-4 py-2 rounded-full whitespace-nowrap text-left flex-shrink-0"
+                                                >
+                                                    <span className="text-sm group-hover:scale-110 transition-transform">💡</span>
+                                                    <span className="text-xs font-medium text-dark-200 group-hover:text-white transition-colors">
+                                                        {question}
+                                                    </span>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })()}
                         <form onSubmit={handleSubmit} className="flex gap-3">
                             <div className="flex-1 relative group">
                                 {/* Gradient backdrop on focus */}
@@ -613,8 +674,20 @@ function ChatContent() {
                                                 {(doc.file_size / 1024).toFixed(1)} KB
                                             </p>
                                         </div>
-                                        <div className="text-primary-500">
-                                            {isSelected ? <CheckCircle2 className="w-4 h-4" /> : <Circle className="w-4 h-4 opacity-30" />}
+                                        <div className="flex items-center gap-1">
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setSummaryDoc({ id: doc.id, name: doc.original_filename });
+                                                }}
+                                                className="p-1 text-dark-500 hover:text-primary-400 rounded transition-colors opacity-0 group-hover:opacity-100"
+                                                title="View Summary"
+                                            >
+                                                <Sparkles className="w-3.5 h-3.5" />
+                                            </button>
+                                            <div className="text-primary-500">
+                                                {isSelected ? <CheckCircle2 className="w-4 h-4" /> : <Circle className="w-4 h-4 opacity-30" />}
+                                            </div>
                                         </div>
                                     </div>
                                 );
@@ -628,6 +701,16 @@ function ChatContent() {
                     </div>
                 </div>
             </div>
+
+            {/* Document Summary Modal */}
+            {summaryDoc && (
+                <DocumentSummaryModal
+                    isOpen={!!summaryDoc}
+                    onClose={() => setSummaryDoc(null)}
+                    documentId={summaryDoc.id}
+                    documentName={summaryDoc.name}
+                />
+            )}
         </div>
     );
 }

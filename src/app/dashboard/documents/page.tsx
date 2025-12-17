@@ -9,13 +9,14 @@ import { getCollections, updateCollectionDocuments, Collection } from '@/lib/col
 import {
     Upload, FileText, Trash2, RefreshCw, Search,
     Loader2, X, CheckCircle, AlertCircle, Clock,
-    Link as LinkIcon, ChevronDown, Folders, Eye, Youtube, Globe
+    Link as LinkIcon, ChevronDown, Folders, Eye, Youtube, Globe, Sparkles
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { UrlUploadModal } from '@/components/documents/UrlUploadModal';
 import { TextInputModal } from '@/components/documents/TextInputModal';
 import { YoutubeUploadModal } from '@/components/documents/YoutubeUploadModal';
 import { WebsiteCrawlModal } from '@/components/documents/WebsiteCrawlModal';
+import { DocumentSummaryModal } from '@/components/documents/DocumentSummaryModal';
 // import { GoogleDrivePickerModal } from '@/components/documents/GoogleDrivePickerModal';
 
 // Wrap with Suspense because useSearchParams needs it in Next.js App Router
@@ -66,6 +67,9 @@ function DocumentsContent() {
     const [showYoutubeModal, setShowYoutubeModal] = useState(false);
     const [showWebsiteModal, setShowWebsiteModal] = useState(false);
     // const [showDriveModal, setShowDriveModal] = useState(false);
+
+    // Summary modal state
+    const [summaryDoc, setSummaryDoc] = useState<{ id: number; name: string } | null>(null);
 
     // Load collections on mount
     useEffect(() => {
@@ -512,13 +516,22 @@ function DocumentsContent() {
                                 {getStatusIcon(doc.status)}
 
                                 {doc.status === 'completed' && (
-                                    <button
-                                        onClick={() => handleView(doc)}
-                                        className="p-2 text-dark-400 hover:text-primary-400 hover:bg-primary-400/10 rounded-lg transition-colors"
-                                        title="View Document"
-                                    >
-                                        <Eye className="w-4 h-4" />
-                                    </button>
+                                    <>
+                                        <button
+                                            onClick={() => handleView(doc)}
+                                            className="p-2 text-dark-400 hover:text-primary-400 hover:bg-primary-400/10 rounded-lg transition-colors"
+                                            title="View Document"
+                                        >
+                                            <Eye className="w-4 h-4" />
+                                        </button>
+                                        <button
+                                            onClick={() => setSummaryDoc({ id: doc.id, name: doc.original_filename })}
+                                            className="p-2 text-dark-400 hover:text-primary-400 hover:bg-primary-400/10 rounded-lg transition-colors"
+                                            title="View AI Summary"
+                                        >
+                                            <Sparkles className="w-4 h-4" />
+                                        </button>
+                                    </>
                                 )}
 
                                 {doc.status === 'failed' && (
@@ -683,6 +696,16 @@ function DocumentsContent() {
                 onSuccess={fetchDocuments}
                 selectedCollectionId={selectedCollectionId}
             /> */}
+
+            {/* Document Summary Modal */}
+            {summaryDoc && (
+                <DocumentSummaryModal
+                    isOpen={!!summaryDoc}
+                    onClose={() => setSummaryDoc(null)}
+                    documentId={summaryDoc.id}
+                    documentName={summaryDoc.name}
+                />
+            )}
         </div>
     );
 }

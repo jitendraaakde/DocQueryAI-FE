@@ -130,6 +130,7 @@ export const sendMessage = async (
 ): Promise<{
     message: ChatMessage;
     session: ChatSession;
+    suggested_questions: string[];
 }> => {
     const response = await api.post(`/chat/sessions/${sessionId}/messages`, {
         message,
