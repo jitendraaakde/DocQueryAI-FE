@@ -8,8 +8,8 @@ import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { AuthHeader } from '@/components/landing/auth-header';
 import { File, Mail, Lock, User, Loader2, Eye, EyeOff, CheckCircle, ArrowRight, Sparkles, Shield, Zap, Rocket } from 'lucide-react';
-import toast from 'react-hot-toast';
-import api, { getErrorMessage } from '@/lib/api';
+import { useToast, createToastHelpers } from '@/lib/toast-utils';
+import api, { getErrorMessage, getErrorCode } from '@/lib/api';
 import { requestOTP } from '@/lib/otp-api';
 import { FloatingShapes } from '@/components/ui/floating-shapes';
 import { GradientMesh } from '@/components/ui/gradient-mesh';
@@ -18,6 +18,8 @@ import { TiltCard } from '@/components/ui/tilt-card';
 export default function RegisterPage() {
     const router = useRouter();
     const { isAuthenticated, isLoading: authLoading, loginWithGoogle } = useAuth();
+    const { showToast } = useToast();
+    const toast = createToastHelpers(showToast);
 
     const [formData, setFormData] = useState({
         email: '',
@@ -41,10 +43,10 @@ export default function RegisterPage() {
         setIsGoogleLoading(true);
         try {
             await loginWithGoogle();
-            toast.success('Account created successfully!');
+            toast.success('Account Created!', 'Welcome to DocQuery AI.');
             router.push('/dashboard');
         } catch (error) {
-            toast.error(getErrorMessage(error));
+            toast.error('Google Sign-Up Failed', getErrorMessage(error));
         } finally {
             setIsGoogleLoading(false);
         }
@@ -61,17 +63,17 @@ export default function RegisterPage() {
         e.preventDefault();
 
         if (!formData.email || !formData.username || !formData.password || !formData.confirm_password) {
-            toast.error('Please fill in all required fields');
+            toast.warning('Missing Information', 'Please fill in all required fields.');
             return;
         }
 
         if (!passwordChecks.length || !passwordChecks.hasNumber || !passwordChecks.hasLetter) {
-            toast.error('Password does not meet requirements');
+            toast.warning('Weak Password', 'Password must be at least 8 characters with letters and numbers.');
             return;
         }
 
         if (!passwordChecks.matches) {
-            toast.error('Passwords do not match');
+            toast.error('Password Mismatch', 'The passwords you entered do not match.');
             return;
         }
 
@@ -91,14 +93,23 @@ export default function RegisterPage() {
 
             if (emailVerificationRequired) {
                 await requestOTP(formData.email, 'verification');
-                toast.success('Account created! Please verify your email.');
+                toast.success('Account Created!', 'Please check your email to verify your account.');
                 router.push(`/verify-otp?email=${encodeURIComponent(formData.email)}&purpose=verification`);
             } else {
-                toast.success('Account created successfully! Please log in.');
+                toast.success('Account Created!', 'Welcome to DocQuery AI. Please log in.');
                 router.push('/login');
             }
         } catch (error) {
-            toast.error(getErrorMessage(error));
+            const errorCode = getErrorCode(error);
+            const errorMessage = getErrorMessage(error);
+
+            if (errorCode === 'REGISTER_EMAIL_EXISTS' || errorMessage.includes('Email already')) {
+                toast.error('Email Already Registered', 'An account with this email already exists. Try logging in.');
+            } else if (errorCode === 'REGISTER_USERNAME_TAKEN' || errorMessage.includes('Username already')) {
+                toast.error('Username Taken', 'This username is already in use. Please choose another.');
+            } else {
+                toast.error('Registration Failed', errorMessage);
+            }
             setIsLoading(false);
         }
     };

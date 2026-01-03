@@ -188,25 +188,14 @@ function ChatContent() {
 
         if (!input.trim() || isLoading) return;
 
-        let sessionId = currentSession?.id;
-        if (!sessionId) {
-            try {
-                const session = await createChatSession({
-                    document_ids: selectedDocs.length > 0 ? selectedDocs : undefined
-                });
-                setCurrentSession(session);
-                sessionId = session.id;
-            } catch (error) {
-                toast.error('Failed to create chat session');
-                return;
-            }
-        }
+        const userMessageContent = input.trim();
 
+        // Show messages immediately for instant feedback
         const userMessage: ChatMessage = {
             id: Date.now().toString(),
             role: 'user',
-            content: input.trim(),
-            displayedContent: input.trim(),
+            content: userMessageContent,
+            displayedContent: userMessageContent,
             timestamp: new Date(),
         };
 
@@ -219,14 +208,25 @@ function ChatContent() {
             isLoading: true,
         };
 
+        // Update UI immediately
         setMessages(prev => [...prev, userMessage, loadingMessage]);
         setInput('');
         setIsLoading(true);
 
         try {
+            // Create session if needed (happens after UI update)
+            let sessionId = currentSession?.id;
+            if (!sessionId) {
+                const session = await createChatSession({
+                    document_ids: selectedDocs.length > 0 ? selectedDocs : undefined
+                });
+                setCurrentSession(session);
+                sessionId = session.id;
+            }
+
             const response = await sendChatMessage(
                 sessionId,
-                userMessage.content,
+                userMessageContent,
                 selectedDocs.length > 0 ? selectedDocs : undefined
             );
 
@@ -328,7 +328,7 @@ function ChatContent() {
                                 </p>
 
                                 {/* Animated Suggestion Chips Carousel */}
-                                <div className="w-full max-w-2xl overflow-hidden">
+                                <div className="w-full max-w-2xl overflow-x-clip py-2 -my-2">
                                     <div className="chip-carousel-container">
                                         <div className="chip-carousel flex gap-3 animate-slide-chips">
                                             {[

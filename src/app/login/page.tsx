@@ -8,8 +8,8 @@ import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { AuthHeader } from '@/components/landing/auth-header';
 import { Mail, Lock, Loader2, Eye, EyeOff, ArrowRight, Sparkles, Shield, Zap } from 'lucide-react';
-import toast from 'react-hot-toast';
-import { getErrorMessage } from '@/lib/api';
+import { useToast, createToastHelpers } from '@/lib/toast-utils';
+import { getErrorMessage, getErrorCode } from '@/lib/api';
 import { FloatingShapes } from '@/components/ui/floating-shapes';
 import { GradientMesh } from '@/components/ui/gradient-mesh';
 import { TiltCard } from '@/components/ui/tilt-card';
@@ -18,6 +18,8 @@ function LoginForm() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const { login, loginWithGoogle, isAuthenticated, isLoading: authLoading } = useAuth();
+    const { showToast } = useToast();
+    const toast = createToastHelpers(showToast);
 
     const [formData, setFormData] = useState({
         email: '',
@@ -31,7 +33,7 @@ function LoginForm() {
     useEffect(() => {
         const verified = searchParams.get('verified');
         if (verified === 'true') {
-            toast.success('Email verified! You can now log in.', { id: 'verified' });
+            toast.success('Email Verified!', 'You can now log in to your account.');
         }
     }, [searchParams]);
 
@@ -45,7 +47,7 @@ function LoginForm() {
         e.preventDefault();
 
         if (!formData.email || !formData.password) {
-            toast.error('Please fill in all fields');
+            toast.warning('Missing Information', 'Please fill in all fields to continue.');
             return;
         }
 
@@ -57,10 +59,41 @@ function LoginForm() {
                 password: formData.password,
             });
 
-            toast.success('Welcome back!');
+            toast.success('Welcome Back!', 'You have successfully logged in.');
             router.push('/dashboard');
         } catch (error) {
-            toast.error(getErrorMessage(error));
+            const errorCode = getErrorCode(error);
+            const errorMessage = getErrorMessage(error);
+
+            // Handle specific error codes with custom messages
+            if (errorCode === 'AUTH_GOOGLE_ONLY') {
+                toast.error(
+                    'Google Sign-In Required',
+                    'This account was created with Google. Please click "Continue with Google" below.'
+                );
+            } else if (errorCode === 'AUTH_EMAIL_NOT_FOUND') {
+                toast.error(
+                    'Account Not Found',
+                    'No account exists with this email. Would you like to create one?'
+                );
+            } else if (errorCode === 'AUTH_INVALID_PASSWORD') {
+                toast.error(
+                    'Incorrect Password',
+                    'The password you entered is incorrect. Please try again.'
+                );
+            } else if (errorCode === 'AUTH_EMAIL_NOT_VERIFIED') {
+                toast.warning(
+                    'Email Not Verified',
+                    'Please check your inbox and verify your email before logging in.'
+                );
+            } else if (errorCode === 'AUTH_ACCOUNT_INACTIVE') {
+                toast.error(
+                    'Account Deactivated',
+                    'Your account has been deactivated. Please contact support.'
+                );
+            } else {
+                toast.error('Login Failed', errorMessage);
+            }
         } finally {
             setIsLoading(false);
         }
@@ -70,10 +103,17 @@ function LoginForm() {
         setIsGoogleLoading(true);
         try {
             await loginWithGoogle();
-            toast.success('Welcome!');
+            toast.success('Welcome!', 'You have successfully logged in with Google.');
             router.push('/dashboard');
         } catch (error) {
-            toast.error(getErrorMessage(error));
+            const errorCode = getErrorCode(error);
+            const errorMessage = getErrorMessage(error);
+
+            if (errorCode === 'AUTH_ACCOUNT_INACTIVE') {
+                toast.error('Account Deactivated', 'Your account has been deactivated. Please contact support.');
+            } else {
+                toast.error('Google Login Failed', errorMessage);
+            }
         } finally {
             setIsGoogleLoading(false);
         }

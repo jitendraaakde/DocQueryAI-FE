@@ -95,14 +95,54 @@ api.interceptors.response.use(
 
 export default api;
 
-// Helper to get error message
+// Error response type from backend
+export interface ApiErrorDetail {
+    error_code?: string;
+    message?: string;
+}
+
+// Helper to get error message (returns the message for display)
 export const getErrorMessage = (error: unknown): string => {
     if (axios.isAxiosError(error)) {
-        const axiosError = error as AxiosError<{ detail: string }>;
-        return axiosError.response?.data?.detail || axiosError.message;
+        const axiosError = error as AxiosError<{ detail: string | ApiErrorDetail }>;
+        const detail = axiosError.response?.data?.detail;
+
+        // Handle structured error response
+        if (detail && typeof detail === 'object') {
+            return detail.message || 'An unexpected error occurred';
+        }
+
+        // Handle string error response (legacy)
+        if (typeof detail === 'string') {
+            return detail;
+        }
+
+        return axiosError.message;
     }
     if (error instanceof Error) {
         return error.message;
     }
     return 'An unexpected error occurred';
+};
+
+// Helper to get error code (for specific handling)
+export const getErrorCode = (error: unknown): string | null => {
+    if (axios.isAxiosError(error)) {
+        const axiosError = error as AxiosError<{ detail: string | ApiErrorDetail }>;
+        const detail = axiosError.response?.data?.detail;
+
+        // Handle structured error response
+        if (detail && typeof detail === 'object' && detail.error_code) {
+            return detail.error_code;
+        }
+    }
+    return null;
+};
+
+// Helper to get full error info
+export const getErrorInfo = (error: unknown): { code: string | null; message: string } => {
+    return {
+        code: getErrorCode(error),
+        message: getErrorMessage(error)
+    };
 };
